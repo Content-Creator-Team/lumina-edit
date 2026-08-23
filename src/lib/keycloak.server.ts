@@ -8,7 +8,7 @@ export type KeycloakServerConfig = {
   url: string;
   realm: string;
   clientId: string;
-  clientSecret?: string;
+  clientSecret?: string | undefined;
 };
 
 export function serverKeycloakConfig(): KeycloakServerConfig {

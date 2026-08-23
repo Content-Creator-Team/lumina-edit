@@ -69,7 +69,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     registerRefreshHandler(doRefresh);
     registerUnauthorizedHandler(() => {
       applySession(null);
-      navigate({ to: "/login", search: { redirect: window.location.pathname }, replace: true });
+      navigate({
+        to: "/login",
+        search: { redirect: window.location.pathname },
+        replace: true,
+      });
     });
     return () => {
       registerRefreshHandler(null);

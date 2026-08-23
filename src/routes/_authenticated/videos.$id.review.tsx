@@ -136,7 +136,11 @@ function ReviewPage() {
     onSuccess: (result) => {
       const job = result.render_job_id ?? result.job_id ?? result.id ?? undefined;
       void queryClient.invalidateQueries({ queryKey: ["video", id] });
-      navigate({ to: "/videos/$id/render", params: { id }, search: { job } });
+      navigate({
+        to: "/videos/$id/render",
+        params: { id },
+        search: job ? { job } : {},
+      });
     },
   });
 

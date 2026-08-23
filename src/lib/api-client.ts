@@ -115,8 +115,8 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     response = await fetch(`${API_BASE_URL}${path}`, {
       method,
       headers,
-      signal,
-      body: body === undefined ? undefined : JSON.stringify(body),
+      ...(signal ? { signal } : {}),
+      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
     });
   } catch (cause) {
     if ((cause as Error)?.name === "AbortError") throw cause;

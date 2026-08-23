@@ -11,9 +11,8 @@ import { ApiError, api } from "@/lib/api-client";
 import { editPlanQuery, isTerminal, renderJobQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/videos/$id/render")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    job: typeof search["job"] === "string" ? search["job"] : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { job?: string } =>
+    typeof search["job"] === "string" ? { job: search["job"] } : {},
   head: () => ({
     meta: [
       { title: "Render — Cutroom" },

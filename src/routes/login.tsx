@@ -12,9 +12,8 @@ const DESCRIPTION =
   "Sign in to Cutroom with your organisation's single sign-on to upload footage and review AI edit plans.";
 
 export const Route = createFileRoute("/login")({
-  validateSearch: (search: Record<string, unknown>) => ({
-    redirect: typeof search["redirect"] === "string" ? search["redirect"] : undefined,
-  }),
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } =>
+    typeof search["redirect"] === "string" ? { redirect: search["redirect"] } : {},
   head: () => ({
     meta: [
       { title: TITLE },
