@@ -21,6 +21,11 @@ function usePrefersReducedMotion() {
 export function ParallaxStage({ className }: { className?: string }) {
   const stageRef = useRef<HTMLDivElement | null>(null);
   const reduced = usePrefersReducedMotion();
+  const [mounted, setMounted] = useState(false);
+
+  // Purely decorative: render after hydration so the 3D layers never take part
+  // in SSR markup (avoids hydration diffs and keeps the first paint cheap).
+  useEffect(() => setMounted(true), []);
 
   useEffect(() => {
     if (reduced) return;
@@ -66,6 +71,8 @@ export function ParallaxStage({ className }: { className?: string }) {
     { z: 90, size: "46%", x: "34%", y: "14%", tint: "oklch(0.66 0.18 45)", blur: "80px", opacity: 0.4 },
     { z: 180, size: "34%", x: "8%", y: "22%", tint: "oklch(0.72 0.14 200)", blur: "70px", opacity: 0.3 },
   ];
+
+  if (!mounted) return null;
 
   return (
     <div
