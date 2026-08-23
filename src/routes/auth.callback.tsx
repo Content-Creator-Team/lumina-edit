@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
 import { exchangeCode } from "@/lib/auth.functions";
-import { consumeOAuthState, consumePkceVerifier } from "@/lib/keycloak-login";
+import { consumeOAuthState, consumePkceVerifier, consumeReturnTo } from "@/lib/keycloak-login";
 
 export const Route = createFileRoute("/auth/callback")({
   head: () => ({
@@ -44,6 +44,7 @@ function CallbackPage() {
       const state = params.get("state");
       const expectedState = consumeOAuthState();
       const codeVerifier = consumePkceVerifier();
+      const returnTo = consumeReturnTo();
 
       if (!code || !codeVerifier) {
         setError("This sign-in link is incomplete or has already been used. Start again.");
@@ -63,7 +64,6 @@ function CallbackPage() {
           },
         });
         applySession(session);
-        const returnTo = params.get("return_to");
         navigate({
           to: returnTo && returnTo.startsWith("/") ? returnTo : "/dashboard",
           replace: true,
