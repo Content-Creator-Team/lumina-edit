@@ -39,6 +39,7 @@ export function SiteHeader() {
           >
             Craft
           </a>
+          <ThemeToggle className="border-cinema-line text-cinema-muted hover:bg-cinema-haze/40 hover:text-cinema-ink" />
           <Button
             asChild
             variant="outline"
