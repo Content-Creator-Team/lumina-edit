@@ -23,7 +23,9 @@ function AuthenticatedLayout() {
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
   // Captured once so a redirect never records the login route itself.
-  const initialPath = useRef(pathname);
+  const initialPath = useRef(
+    typeof window === "undefined" ? pathname : window.location.pathname,
+  );
 
   useEffect(() => {
     if (status === "unauthenticated") {
