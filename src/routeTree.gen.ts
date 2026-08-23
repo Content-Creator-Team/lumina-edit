@@ -10,11 +10,24 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
+import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthenticatedVideosIdIndexRouteImport } from './routes/_authenticated/videos.$id.index'
+import { Route as AuthenticatedVideosIdRenderRouteImport } from './routes/_authenticated/videos.$id.render'
+import { Route as AuthenticatedVideosIdReviewRouteImport } from './routes/_authenticated/videos.$id.review'
+import { Route as AuthenticatedVideosIdVersionsRouteImport } from './routes/_authenticated/videos.$id.versions'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedRoute = AuthenticatedRouteImport.update({
+  id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -22,31 +35,134 @@ const LoginRoute = LoginRouteImport.update({
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
+  id: '/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedUploadRoute = AuthenticatedUploadRouteImport.update({
+  id: '/upload',
+  path: '/upload',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthCallbackRoute = AuthCallbackRouteImport.update({
+  id: '/auth/callback',
+  path: '/auth/callback',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedVideosIdIndexRoute =
+  AuthenticatedVideosIdIndexRouteImport.update({
+    id: '/videos/$id/',
+    path: '/videos/$id/',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedVideosIdRenderRoute =
+  AuthenticatedVideosIdRenderRouteImport.update({
+    id: '/videos/$id/render',
+    path: '/videos/$id/render',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedVideosIdReviewRoute =
+  AuthenticatedVideosIdReviewRouteImport.update({
+    id: '/videos/$id/review',
+    path: '/videos/$id/review',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
+const AuthenticatedVideosIdVersionsRoute =
+  AuthenticatedVideosIdVersionsRouteImport.update({
+    id: '/videos/$id/versions',
+    path: '/videos/$id/versions',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/upload': typeof AuthenticatedUploadRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
+  '/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
+  '/videos/$id/versions': typeof AuthenticatedVideosIdVersionsRoute
+  '/videos/$id/': typeof AuthenticatedVideosIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
+  '/dashboard': typeof AuthenticatedDashboardRoute
+  '/settings': typeof AuthenticatedSettingsRoute
+  '/upload': typeof AuthenticatedUploadRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
+  '/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
+  '/videos/$id/versions': typeof AuthenticatedVideosIdVersionsRoute
+  '/videos/$id': typeof AuthenticatedVideosIdIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
+  '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/upload': typeof AuthenticatedUploadRoute
+  '/auth/callback': typeof AuthCallbackRoute
+  '/_authenticated/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
+  '/_authenticated/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
+  '/_authenticated/videos/$id/versions': typeof AuthenticatedVideosIdVersionsRoute
+  '/_authenticated/videos/$id/': typeof AuthenticatedVideosIdIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login'
+  fullPaths:
+    | '/'
+    | '/login'
+    | '/dashboard'
+    | '/settings'
+    | '/upload'
+    | '/auth/callback'
+    | '/videos/$id/render'
+    | '/videos/$id/review'
+    | '/videos/$id/versions'
+    | '/videos/$id/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login'
-  id: '__root__' | '/' | '/login'
+  to:
+    | '/'
+    | '/login'
+    | '/dashboard'
+    | '/settings'
+    | '/upload'
+    | '/auth/callback'
+    | '/videos/$id/render'
+    | '/videos/$id/review'
+    | '/videos/$id/versions'
+    | '/videos/$id'
+  id:
+    | '__root__'
+    | '/'
+    | '/_authenticated'
+    | '/login'
+    | '/_authenticated/dashboard'
+    | '/_authenticated/settings'
+    | '/_authenticated/upload'
+    | '/auth/callback'
+    | '/_authenticated/videos/$id/render'
+    | '/_authenticated/videos/$id/review'
+    | '/_authenticated/videos/$id/versions'
+    | '/_authenticated/videos/$id/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
   LoginRoute: typeof LoginRoute
+  AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -58,6 +174,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -65,12 +188,94 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/dashboard': {
+      id: '/_authenticated/dashboard'
+      path: '/dashboard'
+      fullPath: '/dashboard'
+      preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/settings': {
+      id: '/_authenticated/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof AuthenticatedSettingsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/upload': {
+      id: '/_authenticated/upload'
+      path: '/upload'
+      fullPath: '/upload'
+      preLoaderRoute: typeof AuthenticatedUploadRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/auth/callback': {
+      id: '/auth/callback'
+      path: '/auth/callback'
+      fullPath: '/auth/callback'
+      preLoaderRoute: typeof AuthCallbackRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/videos/$id/': {
+      id: '/_authenticated/videos/$id/'
+      path: '/videos/$id'
+      fullPath: '/videos/$id/'
+      preLoaderRoute: typeof AuthenticatedVideosIdIndexRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/videos/$id/render': {
+      id: '/_authenticated/videos/$id/render'
+      path: '/videos/$id/render'
+      fullPath: '/videos/$id/render'
+      preLoaderRoute: typeof AuthenticatedVideosIdRenderRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/videos/$id/review': {
+      id: '/_authenticated/videos/$id/review'
+      path: '/videos/$id/review'
+      fullPath: '/videos/$id/review'
+      preLoaderRoute: typeof AuthenticatedVideosIdReviewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/videos/$id/versions': {
+      id: '/_authenticated/videos/$id/versions'
+      path: '/videos/$id/versions'
+      fullPath: '/videos/$id/versions'
+      preLoaderRoute: typeof AuthenticatedVideosIdVersionsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
   }
 }
 
+interface AuthenticatedRouteChildren {
+  AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
+  AuthenticatedVideosIdRenderRoute: typeof AuthenticatedVideosIdRenderRoute
+  AuthenticatedVideosIdReviewRoute: typeof AuthenticatedVideosIdReviewRoute
+  AuthenticatedVideosIdVersionsRoute: typeof AuthenticatedVideosIdVersionsRoute
+  AuthenticatedVideosIdIndexRoute: typeof AuthenticatedVideosIdIndexRoute
+}
+
+const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedUploadRoute: AuthenticatedUploadRoute,
+  AuthenticatedVideosIdRenderRoute: AuthenticatedVideosIdRenderRoute,
+  AuthenticatedVideosIdReviewRoute: AuthenticatedVideosIdReviewRoute,
+  AuthenticatedVideosIdVersionsRoute: AuthenticatedVideosIdVersionsRoute,
+  AuthenticatedVideosIdIndexRoute: AuthenticatedVideosIdIndexRoute,
+}
+
+const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
+  AuthenticatedRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AuthenticatedRoute: AuthenticatedRouteWithChildren,
   LoginRoute: LoginRoute,
+  AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

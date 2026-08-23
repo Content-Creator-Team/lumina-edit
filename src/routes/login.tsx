@@ -1,8 +1,9 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { LogIn, ShieldAlert } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { useAuth } from "@/lib/auth-context";
 import { isKeycloakConfigured } from "@/lib/keycloak-config";
 import { startKeycloakLogin } from "@/lib/keycloak-login";
 
@@ -11,6 +12,8 @@ const DESCRIPTION =
   "Sign in to Cutroom with your organisation's single sign-on to upload footage and review AI edit plans.";
 
 export const Route = createFileRoute("/login")({
+  validateSearch: (search: Record<string, unknown>): { redirect?: string } =>
+    typeof search["redirect"] === "string" ? { redirect: search["redirect"] } : {},
   head: () => ({
     meta: [
       { title: TITLE },
@@ -26,15 +29,27 @@ export const Route = createFileRoute("/login")({
 });
 
 function LoginPage() {
+  const { redirect } = Route.useSearch();
+  const { isAuthenticated } = useAuth();
+  const navigate = useNavigate();
   const [redirecting, setRedirecting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const configured = isKeycloakConfigured();
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      navigate({
+        to: redirect && redirect.startsWith("/") ? redirect : "/dashboard",
+        replace: true,
+      });
+    }
+  }, [isAuthenticated, navigate, redirect]);
 
   async function handleLogin() {
     setError(null);
     setRedirecting(true);
     try {
-      await startKeycloakLogin();
+      await startKeycloakLogin(redirect);
     } catch (cause) {
       setRedirecting(false);
       setError(cause instanceof Error ? cause.message : "Could not start the sign-in flow.");

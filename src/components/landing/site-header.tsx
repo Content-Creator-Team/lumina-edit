@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 
+import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 
 export function SiteHeader() {
@@ -38,6 +39,7 @@ export function SiteHeader() {
           >
             Craft
           </a>
+          <ThemeToggle className="border-cinema-line text-cinema-muted hover:bg-cinema-haze/40 hover:text-cinema-ink" />
           <Button
             asChild
             variant="outline"

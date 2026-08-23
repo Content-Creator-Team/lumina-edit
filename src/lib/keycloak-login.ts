@@ -2,6 +2,7 @@ import { isKeycloakConfigured, keycloakAuthorizationEndpoint, keycloakConfig } f
 
 const VERIFIER_KEY = "cutroom.pkce_verifier";
 const STATE_KEY = "cutroom.oauth_state";
+const RETURN_KEY = "cutroom.return_to";
 
 function randomString(bytes = 48) {
   const array = new Uint8Array(bytes);
@@ -45,7 +46,8 @@ export async function startKeycloakLogin(returnTo?: string) {
     code_challenge: await challengeFor(verifier),
     code_challenge_method: "S256",
   });
-  if (returnTo) params.set("return_to", returnTo);
+  if (returnTo) sessionStorage.setItem(RETURN_KEY, returnTo);
+  else sessionStorage.removeItem(RETURN_KEY);
 
   window.location.assign(`${keycloakAuthorizationEndpoint()}?${params.toString()}`);
 }
@@ -54,6 +56,12 @@ export function consumePkceVerifier() {
   const verifier = sessionStorage.getItem(VERIFIER_KEY);
   sessionStorage.removeItem(VERIFIER_KEY);
   return verifier;
+}
+
+export function consumeReturnTo() {
+  const value = sessionStorage.getItem(RETURN_KEY);
+  sessionStorage.removeItem(RETURN_KEY);
+  return value;
 }
 
 export function consumeOAuthState() {
