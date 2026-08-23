@@ -113,7 +113,7 @@ export function ParallaxStage({ className }: { className?: string }) {
           data-cinema-motion
           className="absolute top-[58%] left-[68%] h-[42rem] w-[42rem] -translate-x-1/2 -translate-y-1/2 rounded-full border"
           style={{
-            borderColor: "var(--cinema-line)",
+            borderColor: "oklch(0.75 0.05 260 / 6%)",
             transform: "translate3d(-50%, -50%, 40px) rotateX(58deg)",
             animation: "cinema-drift 48s linear infinite",
             background: "transparent",
@@ -132,7 +132,7 @@ export function ParallaxStage({ className }: { className?: string }) {
             data-cinema-motion
             className="absolute top-1/2 left-1/2 h-40 w-64 rounded-xl border backdrop-blur-sm"
             style={{
-              borderColor: "var(--cinema-line)",
+              borderColor: "oklch(0.75 0.05 260 / 6%)",
               background:
                 "linear-gradient(140deg, oklch(1 0 0 / 10%), oklch(0.22 0.055 278 / 70%) 60%)",
               transform: `translate3d(calc(-50% + ${card.x}), calc(-50% + ${card.y}), ${card.z}px) rotateY(${card.r}deg) rotateX(6deg)`,
