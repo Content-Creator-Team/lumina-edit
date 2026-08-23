@@ -27,6 +27,7 @@ import {
   transcriptQuery,
   videoQuery,
 } from "@/lib/queries";
+import { isDemoMode } from "@/lib/runtime-config";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/videos/$id/review")({
