@@ -71,7 +71,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       applySession(null);
       navigate({
         to: "/login",
-        search: { redirect: window.location.pathname },
+        search: {
+          redirect: window.location.pathname.startsWith("/login")
+            ? "/dashboard"
+            : window.location.pathname,
+        },
         replace: true,
       });
     });

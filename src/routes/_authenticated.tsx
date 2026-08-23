@@ -1,6 +1,6 @@
 import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
 import { Film, LayoutGrid, Loader2, LogOut, Settings, UploadCloud } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -22,12 +22,14 @@ function AuthenticatedLayout() {
   const { status, user, logout } = useAuth();
   const navigate = useNavigate();
   const pathname = useRouterState({ select: (s) => s.location.pathname });
+  // Captured once so a redirect never records the login route itself.
+  const initialPath = useRef(pathname);
 
   useEffect(() => {
     if (status === "unauthenticated") {
-      navigate({ to: "/login", search: { redirect: pathname }, replace: true });
+      navigate({ to: "/login", search: { redirect: initialPath.current }, replace: true });
     }
-  }, [status, navigate, pathname]);
+  }, [status, navigate]);
 
   if (status !== "authenticated") {
     return (
