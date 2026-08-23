@@ -3,6 +3,8 @@ import {
   notifyUnauthorized,
   refreshAccessToken,
 } from "./auth-store";
+import { isDemoMode } from "./runtime-config";
+import { demoRequest } from "./demo/demo-api";
 import type {
   ApproveResponse,
   EditPlan,
@@ -96,6 +98,11 @@ type RequestOptions = {
 };
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
+  // Demo workspace: served from local fixtures over the exact same paths.
+  if (isDemoMode()) {
+    return demoRequest<T>({ path, method: options.method ?? "GET", body: options.body });
+  }
+
   if (!isApiConfigured()) {
     throw new ApiError(
       0,
@@ -184,6 +191,25 @@ export function uploadToPresignedUrl(
   onProgress: (percent: number) => void,
   signal?: AbortSignal,
 ) {
+  if (url.startsWith("demo://")) {
+    // Simulated presigned upload so progress, cancel and retry are real in demo mode.
+    return new Promise<void>((resolve, reject) => {
+      let percent = 0;
+      const timer = setInterval(() => {
+        percent = Math.min(100, percent + 7 + Math.random() * 9);
+        onProgress(Math.round(percent));
+        if (percent >= 100) {
+          clearInterval(timer);
+          resolve();
+        }
+      }, 160);
+      signal?.addEventListener("abort", () => {
+        clearInterval(timer);
+        reject(new DOMException("Upload cancelled", "AbortError"));
+      });
+    });
+  }
+
   return new Promise<void>((resolve, reject) => {
     const xhr = new XMLHttpRequest();
     xhr.open("PUT", url);

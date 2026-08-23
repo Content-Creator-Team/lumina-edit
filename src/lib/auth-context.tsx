@@ -8,14 +8,28 @@ import {
   setAccessToken,
 } from "./auth-store";
 import type { SessionUser } from "./keycloak.server";
+import { isDemoMode } from "./runtime-config";
+import { DEMO_USER } from "./demo/fixtures";
+
+const DEMO_SESSION_KEY = "cutroom.demo_session";
+
+function demoSession(): SessionPayload {
+  return {
+    user: { ...DEMO_USER },
+    accessToken: "demo-session",
+    expiresAt: Date.now() + 12 * 60 * 60 * 1000,
+  };
+}
 
 type AuthContextValue = {
   user: SessionUser | null;
+  isDemo: boolean;
   status: "loading" | "authenticated" | "unauthenticated";
   isAuthenticated: boolean;
   hasRole: (role: string) => boolean;
   logout: () => Promise<void>;
   applySession: (session: SessionPayload) => void;
+  startDemoSession: () => void;
 };
 
 const AuthContext = createContext<AuthContextValue | null>(null);
@@ -44,6 +58,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   // Initial session hydration from the httpOnly cookie.
   useEffect(() => {
     let cancelled = false;
+    if (isDemoMode()) {
+      // No Keycloak redirect, no cookies: the demo session is local only.
+      const active = sessionStorage.getItem(DEMO_SESSION_KEY) === "active";
+      applySession(active ? demoSession() : null);
+      return;
+    }
     (async () => {
       let next = await getSession().catch(() => null);
       if (!next) next = await refreshSession().catch(() => null);
@@ -86,6 +106,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [doRefresh, applySession, navigate]);
 
   const logout = useCallback(async () => {
+    if (isDemoMode()) {
+      sessionStorage.removeItem(DEMO_SESSION_KEY);
+      applySession(null);
+      router.invalidate();
+      navigate({ to: "/", replace: true });
+      return;
+    }
     const result = await endSession({
       data: { postLogoutRedirectUri: `${window.location.origin}/` },
     }).catch(() => ({ logoutUrl: null }));
@@ -98,11 +125,16 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(
     () => ({
       user: session?.user ?? null,
+      isDemo: isDemoMode(),
       status,
       isAuthenticated: status === "authenticated",
       hasRole: (role: string) => Boolean(session?.user.roles.includes(role)),
       logout,
       applySession: (next: SessionPayload) => applySession(next),
+      startDemoSession: () => {
+        sessionStorage.setItem(DEMO_SESSION_KEY, "active");
+        applySession(demoSession());
+      },
     }),
     [session, status, logout, applySession],
   );

@@ -77,7 +77,7 @@ export function Journey() {
               <div className="flex items-center justify-between">
                 <span
                   className="flex size-11 items-center justify-center rounded-lg border border-cinema-line"
-                  style={{ background: "oklch(1 0 0 / 4%)" }}
+                  style={{ background: "color-mix(in oklab, var(--foreground) 4%, transparent)" }}
                 >
                   <stage.icon
                     className="size-5 text-cinema-ember"

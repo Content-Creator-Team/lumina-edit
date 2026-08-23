@@ -62,7 +62,7 @@ function Landing() {
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "linear-gradient(180deg, oklch(0.16 0.03 275 / 55%) 0%, transparent 35%, oklch(0.16 0.03 275 / 65%) 100%)",
+                "linear-gradient(180deg, color-mix(in oklab, var(--scene-veil) 70%, transparent) 0%, transparent 38%, color-mix(in oklab, var(--scene-veil) 82%, transparent) 100%)",
             }}
           />
           <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pt-32 pb-24">
@@ -152,7 +152,7 @@ function Landing() {
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(70% 120% at 50% 120%, oklch(0.63 0.17 45 / 32%), transparent 70%)",
+                "radial-gradient(70% 120% at 50% 120%, color-mix(in oklab, var(--tint-1) 18%, transparent), transparent 70%)",
             }}
           />
           <div className="relative mx-auto w-full max-w-3xl px-6 py-32 text-center">

@@ -1,6 +1,7 @@
 import { Link } from "@tanstack/react-router";
 
 import { ThemeToggle } from "@/components/theme-toggle";
+import { DemoBadge } from "@/components/demo-badge";
 import { Button } from "@/components/ui/button";
 
 export function SiteHeader() {
@@ -18,7 +19,7 @@ export function SiteHeader() {
             aria-hidden="true"
             className="flex size-8 items-center justify-center rounded-md border border-cinema-line"
             style={{
-              background: "linear-gradient(140deg, var(--cinema-ember), var(--cinema-ember-deep))",
+              background: "linear-gradient(140deg, var(--primary), var(--primary-deep))",
             }}
           />
           <span className="font-[family-name:var(--font-display)] text-lg tracking-wide text-cinema-ink">
@@ -26,7 +27,8 @@ export function SiteHeader() {
           </span>
         </Link>
 
-        <div className="flex items-center gap-2 sm:gap-6">
+        <div className="flex items-center gap-2 sm:gap-4">
+          <DemoBadge className="hidden md:inline-flex" />
           <a
             href="#journey"
             className="hidden rounded-sm text-sm text-cinema-muted transition-colors hover:text-cinema-ink focus-visible:ring-2 focus-visible:ring-cinema-ember focus-visible:outline-none sm:inline"

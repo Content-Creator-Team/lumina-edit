@@ -40,14 +40,14 @@ export function TimelineShowcase() {
             className="cinema-grain relative overflow-hidden rounded-2xl border border-cinema-line p-6 shadow-2xl"
             style={{
               background:
-                "linear-gradient(160deg, oklch(0.26 0.06 280 / 90%), oklch(0.18 0.035 276 / 95%))",
+                "linear-gradient(160deg, var(--surface-raised), var(--surface-sunken))",
             }}
           >
             <div
               className="relative aspect-video w-full overflow-hidden rounded-lg border border-cinema-line"
               style={{
                 background:
-                  "radial-gradient(120% 90% at 30% 20%, oklch(0.42 0.1 285), oklch(0.17 0.04 276) 70%)",
+                  "radial-gradient(120% 90% at 30% 20%, color-mix(in oklab, var(--tint-2) 26%, var(--surface-sunken)), var(--surface-sunken) 72%)",
               }}
             >
               <div
@@ -56,7 +56,7 @@ export function TimelineShowcase() {
                 className="absolute inset-y-0 w-24"
                 style={{
                   background:
-                    "linear-gradient(90deg, transparent, oklch(0.78 0.16 62 / 18%), transparent)",
+                    "linear-gradient(90deg, transparent, color-mix(in oklab, var(--primary) 22%, transparent), transparent)",
                   animation: "cinema-sweep 9s ease-in-out infinite",
                 }}
               />
@@ -81,13 +81,13 @@ export function TimelineShowcase() {
                       style={{
                         flex: `${segment.width} 1 0%`,
                         background: keep
-                          ? "oklch(0.75 0.13 195 / 28%)"
-                          : "oklch(0.63 0.17 45 / 26%)",
-                        color: "var(--cinema-ink)",
-                        border: `1px solid ${keep ? "oklch(0.75 0.13 195 / 55%)" : "oklch(0.63 0.17 45 / 55%)"}`,
+                          ? "color-mix(in oklab, var(--signal) 22%, transparent)"
+                          : "color-mix(in oklab, var(--muted-foreground) 18%, transparent)",
+                        color: "var(--foreground)",
+                        border: `1px solid ${keep ? "color-mix(in oklab, var(--signal) 55%, transparent)" : "color-mix(in oklab, var(--muted-foreground) 42%, transparent)"}`,
                         backgroundImage: keep
                           ? undefined
-                          : "repeating-linear-gradient(45deg, oklch(1 0 0 / 8%) 0 4px, transparent 4px 8px)",
+                          : "repeating-linear-gradient(45deg, color-mix(in oklab, var(--foreground) 10%, transparent) 0 4px, transparent 4px 8px)",
                       }}
                     >
                       <span aria-hidden="true">{keep ? "✓" : "✕"}</span>
@@ -100,7 +100,7 @@ export function TimelineShowcase() {
                 <li className="flex items-center gap-2">
                   <span
                     className="size-2.5 rounded-full"
-                    style={{ background: "var(--cinema-signal)" }}
+                    style={{ background: "var(--signal)" }}
                     aria-hidden="true"
                   />
                   ✓ Keep segment
@@ -108,7 +108,7 @@ export function TimelineShowcase() {
                 <li className="flex items-center gap-2">
                   <span
                     className="size-2.5 rounded-full"
-                    style={{ background: "var(--cinema-ember-deep)" }}
+                    style={{ background: "var(--primary-deep)" }}
                     aria-hidden="true"
                   />
                   ✕ Cut segment
@@ -116,7 +116,7 @@ export function TimelineShowcase() {
                 <li className="flex items-center gap-2">
                   <span
                     className="size-2.5 rounded-full"
-                    style={{ background: "var(--cinema-ember)" }}
+                    style={{ background: "var(--primary)" }}
                     aria-hidden="true"
                   />
                   ◆ Event marker
