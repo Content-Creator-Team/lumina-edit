@@ -62,9 +62,9 @@ export function ParallaxStage({ className }: { className?: string }) {
   }, [reduced]);
 
   const layers = [
-    { z: -260, size: "88%", tint: "oklch(0.5 0.13 288)", blur: "60px", opacity: 0.9 },
-    { z: -140, size: "70%", tint: "oklch(0.66 0.18 45)", blur: "42px", opacity: 0.75 },
-    { z: -40, size: "54%", tint: "oklch(0.72 0.14 200)", blur: "28px", opacity: 0.65 },
+    { z: -260, size: "88%", tint: "oklch(0.5 0.13 288)", blur: "30px", opacity: 0.9 },
+    { z: -140, size: "70%", tint: "oklch(0.66 0.18 45)", blur: "24px", opacity: 0.75 },
+    { z: -40, size: "54%", tint: "oklch(0.72 0.14 200)", blur: "18px", opacity: 0.65 },
   ];
 
   return (
@@ -92,7 +92,7 @@ export function ParallaxStage({ className }: { className?: string }) {
               aspectRatio: "1 / 0.62",
               marginLeft: `calc(${layer.size} / -2)`,
               transform: `translate3d(0, -50%, ${layer.z}px)`,
-              background: `radial-gradient(circle at 50% 45%, ${layer.tint}, transparent 68%)`,
+              background: `radial-gradient(circle at 50% 45%, ${layer.tint}, transparent 62%)`,
               filter: `blur(${layer.blur})`,
               opacity: layer.opacity,
               animation: "cinema-float 14s ease-in-out infinite",

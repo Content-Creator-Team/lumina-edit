@@ -62,7 +62,7 @@ function Landing() {
             className="pointer-events-none absolute inset-0"
             style={{
               background:
-                "radial-gradient(75% 65% at 55% 45%, transparent, oklch(0.16 0.03 275 / 70%) 92%)",
+                "linear-gradient(180deg, oklch(0.16 0.03 275 / 55%) 0%, transparent 35%, oklch(0.16 0.03 275 / 65%) 100%)",
             }}
           />
           <div className="relative z-10 mx-auto w-full max-w-6xl px-6 pt-32 pb-24">
