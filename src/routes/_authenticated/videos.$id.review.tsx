@@ -27,6 +27,7 @@ import {
   transcriptQuery,
   videoQuery,
 } from "@/lib/queries";
+import { isDemoMode } from "@/lib/runtime-config";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/videos/$id/review")({
@@ -235,8 +236,15 @@ function ReviewPage() {
                 className="w-full rounded-lg border border-border bg-black"
               />
             ) : (
-              <div className="flex aspect-video items-center justify-center rounded-lg border border-dashed border-border text-sm text-muted-foreground">
-                A playback URL isn't available for this video yet.
+              <div className="flex aspect-video flex-col items-center justify-center gap-2 rounded-lg border border-dashed border-border px-8 text-center text-sm text-muted-foreground">
+                <span>A playback URL isn't available for this video yet.</span>
+                {isDemoMode() && (
+                  <span className="max-w-md text-xs leading-relaxed">
+                    The demo workspace ships no media files, so the plan, timeline and transcript
+                    below stay fully interactive while the player waits for a real presigned URL
+                    from the backend.
+                  </span>
+                )}
               </div>
             )}
 

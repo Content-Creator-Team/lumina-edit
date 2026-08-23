@@ -2,6 +2,7 @@ import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tan
 import { Film, LayoutGrid, Loader2, LogOut, Settings, UploadCloud } from "lucide-react";
 import { useEffect, useRef } from "react";
 
+import { DemoBadge } from "@/components/demo-badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
@@ -55,6 +56,8 @@ function AuthenticatedLayout() {
             <Film className="size-5 text-primary" aria-hidden="true" strokeWidth={1.75} />
             <span className="font-[family-name:var(--font-display)] text-lg">Cutroom</span>
           </Link>
+
+          <DemoBadge className="hidden lg:inline-flex" />
 
           <nav aria-label="Primary" className="flex items-center gap-1">
             {NAV.map((item) => {
