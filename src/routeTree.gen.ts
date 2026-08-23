@@ -18,6 +18,7 @@ import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedVideosIdIndexRouteImport } from './routes/_authenticated/videos.$id.index'
 import { Route as AuthenticatedVideosIdRenderRouteImport } from './routes/_authenticated/videos.$id.render'
+import { Route as AuthenticatedVideosIdReviewRouteImport } from './routes/_authenticated/videos.$id.review'
 import { Route as AuthenticatedVideosIdVersionsRouteImport } from './routes/_authenticated/videos.$id.versions'
 
 const IndexRoute = IndexRouteImport.update({
@@ -66,6 +67,12 @@ const AuthenticatedVideosIdRenderRoute =
     path: '/videos/$id/render',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedVideosIdReviewRoute =
+  AuthenticatedVideosIdReviewRouteImport.update({
+    id: '/videos/$id/review',
+    path: '/videos/$id/review',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedVideosIdVersionsRoute =
   AuthenticatedVideosIdVersionsRouteImport.update({
     id: '/videos/$id/versions',
@@ -81,6 +88,7 @@ export interface FileRoutesByFullPath {
   '/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
+  '/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
   '/videos/$id/versions': typeof AuthenticatedVideosIdVersionsRoute
   '/videos/$id/': typeof AuthenticatedVideosIdIndexRoute
 }
@@ -92,6 +100,7 @@ export interface FileRoutesByTo {
   '/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
+  '/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
   '/videos/$id/versions': typeof AuthenticatedVideosIdVersionsRoute
   '/videos/$id': typeof AuthenticatedVideosIdIndexRoute
 }
@@ -105,6 +114,7 @@ export interface FileRoutesById {
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
+  '/_authenticated/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
   '/_authenticated/videos/$id/versions': typeof AuthenticatedVideosIdVersionsRoute
   '/_authenticated/videos/$id/': typeof AuthenticatedVideosIdIndexRoute
 }
@@ -118,6 +128,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/auth/callback'
     | '/videos/$id/render'
+    | '/videos/$id/review'
     | '/videos/$id/versions'
     | '/videos/$id/'
   fileRoutesByTo: FileRoutesByTo
@@ -129,6 +140,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/auth/callback'
     | '/videos/$id/render'
+    | '/videos/$id/review'
     | '/videos/$id/versions'
     | '/videos/$id'
   id:
@@ -141,6 +153,7 @@ export interface FileRouteTypes {
     | '/_authenticated/upload'
     | '/auth/callback'
     | '/_authenticated/videos/$id/render'
+    | '/_authenticated/videos/$id/review'
     | '/_authenticated/videos/$id/versions'
     | '/_authenticated/videos/$id/'
   fileRoutesById: FileRoutesById
@@ -217,6 +230,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVideosIdRenderRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/videos/$id/review': {
+      id: '/_authenticated/videos/$id/review'
+      path: '/videos/$id/review'
+      fullPath: '/videos/$id/review'
+      preLoaderRoute: typeof AuthenticatedVideosIdReviewRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/videos/$id/versions': {
       id: '/_authenticated/videos/$id/versions'
       path: '/videos/$id/versions'
@@ -232,6 +252,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
   AuthenticatedVideosIdRenderRoute: typeof AuthenticatedVideosIdRenderRoute
+  AuthenticatedVideosIdReviewRoute: typeof AuthenticatedVideosIdReviewRoute
   AuthenticatedVideosIdVersionsRoute: typeof AuthenticatedVideosIdVersionsRoute
   AuthenticatedVideosIdIndexRoute: typeof AuthenticatedVideosIdIndexRoute
 }
@@ -241,6 +262,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedUploadRoute: AuthenticatedUploadRoute,
   AuthenticatedVideosIdRenderRoute: AuthenticatedVideosIdRenderRoute,
+  AuthenticatedVideosIdReviewRoute: AuthenticatedVideosIdReviewRoute,
   AuthenticatedVideosIdVersionsRoute: AuthenticatedVideosIdVersionsRoute,
   AuthenticatedVideosIdIndexRoute: AuthenticatedVideosIdIndexRoute,
 }
