@@ -62,9 +62,9 @@ export function ParallaxStage({ className }: { className?: string }) {
   }, [reduced]);
 
   const layers = [
-    { z: 0, size: "88%", tint: "oklch(0.5 0.13 288)", blur: "30px", opacity: 0.9 },
-    { z: 90, size: "70%", tint: "oklch(0.66 0.18 45)", blur: "24px", opacity: 0.75 },
-    { z: 180, size: "54%", tint: "oklch(0.72 0.14 200)", blur: "18px", opacity: 0.65 },
+    { z: 0, size: "78%", x: "18%", y: "-8%", tint: "oklch(0.5 0.13 288)", blur: "90px", opacity: 0.5 },
+    { z: 90, size: "46%", x: "34%", y: "14%", tint: "oklch(0.66 0.18 45)", blur: "80px", opacity: 0.4 },
+    { z: 180, size: "34%", x: "8%", y: "22%", tint: "oklch(0.72 0.14 200)", blur: "70px", opacity: 0.3 },
   ];
 
   return (
@@ -91,7 +91,8 @@ export function ParallaxStage({ className }: { className?: string }) {
               width: layer.size,
               aspectRatio: "1 / 0.62",
               marginLeft: `calc(${layer.size} / -2)`,
-              transform: `translate3d(0, -50%, ${layer.z}px)`,
+              marginTop: layer.y,
+              transform: `translate3d(${layer.x}, -50%, ${layer.z}px)`,
               background: `radial-gradient(circle at 50% 45%, ${layer.tint}, transparent 62%)`,
               filter: `blur(${layer.blur})`,
               opacity: layer.opacity,
@@ -103,21 +104,21 @@ export function ParallaxStage({ className }: { className?: string }) {
         {/* Rotating film-reel horizon ring */}
         <div
           data-cinema-motion
-          className="absolute top-[58%] left-1/2 h-[46rem] w-[46rem] -translate-x-1/2 -translate-y-1/2 rounded-full border"
+          className="absolute top-[58%] left-[68%] h-[42rem] w-[42rem] -translate-x-1/2 -translate-y-1/2 rounded-full border"
           style={{
             borderColor: "var(--cinema-line)",
             transform: "translate3d(-50%, -50%, 40px) rotateX(58deg)",
             animation: "cinema-drift 48s linear infinite",
             background:
-              "conic-gradient(from 0deg, transparent 0deg, oklch(0.78 0.16 62 / 45%) 40deg, transparent 90deg, oklch(0.75 0.13 195 / 38%) 200deg, transparent 260deg)",
+              "conic-gradient(from 0deg, transparent 0deg, oklch(0.78 0.16 62 / 30%) 40deg, transparent 90deg, oklch(0.75 0.13 195 / 25%) 200deg, transparent 260deg)",
           }}
         />
 
         {/* Floating filmstrip planes */}
         {[
-          { x: "-26%", y: "-18%", z: 60, r: -14 },
-          { x: "24%", y: "8%", z: 120, r: 12 },
-          { x: "-6%", y: "26%", z: 20, r: 4 },
+          { x: "36%", y: "-30%", z: 60, r: -16 },
+          { x: "62%", y: "6%", z: 120, r: 12 },
+          { x: "26%", y: "34%", z: 20, r: 4 },
         ].map((card, index) => (
           <div
             key={card.z}
