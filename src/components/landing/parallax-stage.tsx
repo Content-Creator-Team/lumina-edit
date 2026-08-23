@@ -62,9 +62,9 @@ export function ParallaxStage({ className }: { className?: string }) {
   }, [reduced]);
 
   const layers = [
-    { z: -260, size: "88%", tint: "var(--cinema-haze)", blur: "60px", opacity: 0.55 },
-    { z: -140, size: "70%", tint: "var(--cinema-ember-deep)", blur: "42px", opacity: 0.45 },
-    { z: -40, size: "54%", tint: "var(--cinema-signal)", blur: "28px", opacity: 0.35 },
+    { z: -260, size: "88%", tint: "var(--cinema-haze)", blur: "60px", opacity: 0.8 },
+    { z: -140, size: "70%", tint: "var(--cinema-ember-deep)", blur: "42px", opacity: 0.7 },
+    { z: -40, size: "54%", tint: "var(--cinema-signal)", blur: "28px", opacity: 0.6 },
   ];
 
   return (
