@@ -116,16 +116,16 @@ export function ParallaxStage({ className }: { className?: string }) {
             borderColor: "var(--cinema-line)",
             transform: "translate3d(-50%, -50%, 40px) rotateX(58deg)",
             animation: "cinema-drift 48s linear infinite",
-            background:
-              "conic-gradient(from 0deg, transparent 0deg, oklch(0.78 0.16 62 / 30%) 40deg, transparent 90deg, oklch(0.75 0.13 195 / 25%) 200deg, transparent 260deg)",
+            background: "transparent",
+            boxShadow: "0 0 120px 20px oklch(0.66 0.16 55 / 8%) inset",
           }}
         />
 
         {/* Floating filmstrip planes */}
         {[
-          { x: "36%", y: "-30%", z: 60, r: -16 },
-          { x: "62%", y: "6%", z: 120, r: 12 },
-          { x: "26%", y: "34%", z: 20, r: 4 },
+          { x: "22%", y: "-26%", z: 60, r: -16 },
+          { x: "44%", y: "4%", z: 120, r: 12 },
+          { x: "14%", y: "30%", z: 20, r: 4 },
         ].map((card, index) => (
           <div
             key={card.z}
