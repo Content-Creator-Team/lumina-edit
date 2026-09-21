@@ -124,7 +124,7 @@ export const findHighlights = createServerFn({ method: "POST" })
       highlights?: Array<Partial<HighlightSuggestion>>;
     };
 
-    const max = data.durationSeconds;
+    const max = known ?? Number.POSITIVE_INFINITY;
     const highlights: HighlightSuggestion[] = (parsed.highlights ?? [])
       .map((item, index) => {
         const start = Math.max(0, Math.min(max, Number(item.start ?? 0)));
