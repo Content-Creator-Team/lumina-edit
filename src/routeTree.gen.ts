@@ -13,6 +13,7 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
+import { Route as AuthenticatedHighlightsRouteImport } from './routes/_authenticated/highlights'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTrimmerRouteImport } from './routes/_authenticated/trimmer'
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
@@ -39,6 +40,11 @@ const LoginRoute = LoginRouteImport.update({
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedHighlightsRoute = AuthenticatedHighlightsRouteImport.update({
+  id: '/highlights',
+  path: '/highlights',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
@@ -90,6 +96,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/highlights': typeof AuthenticatedHighlightsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/trimmer': typeof AuthenticatedTrimmerRoute
   '/upload': typeof AuthenticatedUploadRoute
@@ -103,6 +110,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
+  '/highlights': typeof AuthenticatedHighlightsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/trimmer': typeof AuthenticatedTrimmerRoute
   '/upload': typeof AuthenticatedUploadRoute
@@ -118,6 +126,7 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteWithChildren
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
+  '/_authenticated/highlights': typeof AuthenticatedHighlightsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/trimmer': typeof AuthenticatedTrimmerRoute
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
@@ -133,6 +142,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/dashboard'
+    | '/highlights'
     | '/settings'
     | '/trimmer'
     | '/upload'
@@ -146,6 +156,7 @@ export interface FileRouteTypes {
     | '/'
     | '/login'
     | '/dashboard'
+    | '/highlights'
     | '/settings'
     | '/trimmer'
     | '/upload'
@@ -160,6 +171,7 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/login'
     | '/_authenticated/dashboard'
+    | '/_authenticated/highlights'
     | '/_authenticated/settings'
     | '/_authenticated/trimmer'
     | '/_authenticated/upload'
@@ -205,6 +217,13 @@ declare module '@tanstack/react-router' {
       path: '/dashboard'
       fullPath: '/dashboard'
       preLoaderRoute: typeof AuthenticatedDashboardRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/highlights': {
+      id: '/_authenticated/highlights'
+      path: '/highlights'
+      fullPath: '/highlights'
+      preLoaderRoute: typeof AuthenticatedHighlightsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/settings': {
@@ -268,6 +287,7 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
+  AuthenticatedHighlightsRoute: typeof AuthenticatedHighlightsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTrimmerRoute: typeof AuthenticatedTrimmerRoute
   AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
@@ -279,6 +299,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
+  AuthenticatedHighlightsRoute: AuthenticatedHighlightsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTrimmerRoute: AuthenticatedTrimmerRoute,
   AuthenticatedUploadRoute: AuthenticatedUploadRoute,
