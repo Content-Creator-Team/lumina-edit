@@ -71,7 +71,7 @@ function HighlightsPage() {
         data: {
           dataUrl,
           mimeType: file.type || "video/mp4",
-          durationSeconds: duration,
+          ...(duration > 0 ? { durationSeconds: duration } : {}),
           filename: file.name,
           goal: goal.trim() || undefined,
         },
@@ -79,6 +79,8 @@ function HighlightsPage() {
     },
     onSuccess: (result) => {
       setSummary(result.summary);
+      const longest = Math.max(...result.highlights.map((highlight) => highlight.end), 0);
+      setDuration((current) => (current > 0 ? current : longest));
       setClips(
         result.highlights.map((highlight, index) => ({
           ...highlight,
