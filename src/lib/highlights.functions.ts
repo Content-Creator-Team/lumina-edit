@@ -10,7 +10,7 @@ import { z } from "zod";
 const Input = z.object({
   dataUrl: z.string().min(32),
   mimeType: z.string().min(3),
-  durationSeconds: z.number().positive(),
+  durationSeconds: z.number().nonnegative().optional(),
   filename: z.string().optional(),
   goal: z.string().max(400).optional(),
 });
