@@ -69,13 +69,16 @@ export const findHighlights = createServerFn({ method: "POST" })
     const key = process.env["LOVABLE_API_KEY"];
     if (!key) throw new Error("AI is not configured for this project.");
 
+    const known = data.durationSeconds && data.durationSeconds > 0 ? data.durationSeconds : null;
     const prompt = [
-      `You are an expert video editor reviewing a ${Math.round(data.durationSeconds)} second clip.`,
+      known
+        ? `You are an expert video editor reviewing a ${Math.round(known)} second clip.`
+        : "You are an expert video editor reviewing the attached clip.",
       data.goal ? `Editor's goal: ${data.goal}` : "",
       "Identify the strongest highlight moments worth cutting into short clips.",
       "Return ONLY json in this exact shape:",
       `{"summary":"one sentence about the footage","highlights":[{"title":"short clip name","start":0,"end":6.5,"reason":"why this moment lands","caption":"suggested on-screen caption","score":0.87}]}`,
-      `Rules: between 3 and 8 highlights; start/end are seconds within 0 and ${data.durationSeconds.toFixed(1)}; each clip 3-45 seconds; no overlaps; score between 0 and 1; titles under 6 words.`,
+      `Rules: between 2 and 8 highlights; start/end are seconds${known ? ` within 0 and ${known.toFixed(1)}` : " measured from the start of the clip"}; keep each clip short; no overlaps; score between 0 and 1; titles under 6 words.`,
     ]
       .filter(Boolean)
       .join("\n");
