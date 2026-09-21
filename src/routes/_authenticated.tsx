@@ -1,5 +1,5 @@
 import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
-import { Film, LayoutGrid, Loader2, LogOut, Settings, UploadCloud } from "lucide-react";
+import { Film, LayoutGrid, Loader2, LogOut, Scissors, Settings, UploadCloud } from "lucide-react";
 import { useEffect, useRef } from "react";
 
 import { DemoBadge } from "@/components/demo-badge";
@@ -16,6 +16,7 @@ export const Route = createFileRoute("/_authenticated")({
 const NAV = [
   { to: "/dashboard", label: "Videos", icon: LayoutGrid },
   { to: "/upload", label: "Upload", icon: UploadCloud },
+  { to: "/trimmer", label: "Trimmer", icon: Scissors },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
