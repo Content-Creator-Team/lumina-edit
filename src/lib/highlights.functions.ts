@@ -21,7 +21,7 @@ export type HighlightSuggestion = {
   end: number;
   reason: string;
   score: number;
-  caption?: string;
+  caption?: string | undefined;
 };
 
 function extractJson(text: string): unknown {
