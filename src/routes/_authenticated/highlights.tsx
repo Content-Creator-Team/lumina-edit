@@ -66,7 +66,6 @@ function HighlightsPage() {
   const mutation = useMutation({
     mutationFn: async () => {
       if (!file) throw new Error("Choose a video first.");
-      if (!duration) throw new Error("Still reading the video length — try again in a second.");
       const dataUrl = await readAsDataUrl(file);
       return analyze({
         data: {
