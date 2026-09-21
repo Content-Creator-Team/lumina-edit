@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Clapperboard, UploadCloud } from "lucide-react";
+import { Clapperboard, Scissors, UploadCloud } from "lucide-react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/app/query-states";
 import { StatusBadge } from "@/components/app/status-badge";
@@ -45,12 +45,20 @@ function DashboardPage() {
             Upload footage, review the AI edit plan, then render the final cut.
           </p>
         </div>
-        <Button asChild>
-          <Link to="/upload">
-            <UploadCloud className="size-4" aria-hidden="true" />
-            Upload video
-          </Link>
-        </Button>
+        <div className="flex flex-wrap gap-2">
+          <Button asChild variant="outline">
+            <Link to="/trimmer">
+              <Scissors className="size-4" aria-hidden="true" />
+              Quick trimmer
+            </Link>
+          </Button>
+          <Button asChild>
+            <Link to="/upload">
+              <UploadCloud className="size-4" aria-hidden="true" />
+              Upload video
+            </Link>
+          </Button>
+        </div>
       </div>
 
       <div className="mt-8">

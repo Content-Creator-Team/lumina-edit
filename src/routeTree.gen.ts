@@ -14,6 +14,7 @@ import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
+import { Route as AuthenticatedTrimmerRouteImport } from './routes/_authenticated/trimmer'
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as AuthenticatedVideosIdIndexRouteImport } from './routes/_authenticated/videos.$id.index'
@@ -43,6 +44,11 @@ const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedTrimmerRoute = AuthenticatedTrimmerRouteImport.update({
+  id: '/trimmer',
+  path: '/trimmer',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedUploadRoute = AuthenticatedUploadRouteImport.update({
@@ -85,6 +91,7 @@ export interface FileRoutesByFullPath {
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/trimmer': typeof AuthenticatedTrimmerRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
@@ -97,6 +104,7 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/settings': typeof AuthenticatedSettingsRoute
+  '/trimmer': typeof AuthenticatedTrimmerRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
@@ -111,6 +119,7 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
+  '/_authenticated/trimmer': typeof AuthenticatedTrimmerRoute
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_authenticated/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
@@ -125,6 +134,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/dashboard'
     | '/settings'
+    | '/trimmer'
     | '/upload'
     | '/auth/callback'
     | '/videos/$id/render'
@@ -137,6 +147,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/dashboard'
     | '/settings'
+    | '/trimmer'
     | '/upload'
     | '/auth/callback'
     | '/videos/$id/render'
@@ -150,6 +161,7 @@ export interface FileRouteTypes {
     | '/login'
     | '/_authenticated/dashboard'
     | '/_authenticated/settings'
+    | '/_authenticated/trimmer'
     | '/_authenticated/upload'
     | '/auth/callback'
     | '/_authenticated/videos/$id/render'
@@ -202,6 +214,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedSettingsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/trimmer': {
+      id: '/_authenticated/trimmer'
+      path: '/trimmer'
+      fullPath: '/trimmer'
+      preLoaderRoute: typeof AuthenticatedTrimmerRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/upload': {
       id: '/_authenticated/upload'
       path: '/upload'
@@ -250,6 +269,7 @@ declare module '@tanstack/react-router' {
 interface AuthenticatedRouteChildren {
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
+  AuthenticatedTrimmerRoute: typeof AuthenticatedTrimmerRoute
   AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
   AuthenticatedVideosIdRenderRoute: typeof AuthenticatedVideosIdRenderRoute
   AuthenticatedVideosIdReviewRoute: typeof AuthenticatedVideosIdReviewRoute
@@ -260,6 +280,7 @@ interface AuthenticatedRouteChildren {
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
+  AuthenticatedTrimmerRoute: AuthenticatedTrimmerRoute,
   AuthenticatedUploadRoute: AuthenticatedUploadRoute,
   AuthenticatedVideosIdRenderRoute: AuthenticatedVideosIdRenderRoute,
   AuthenticatedVideosIdReviewRoute: AuthenticatedVideosIdReviewRoute,
