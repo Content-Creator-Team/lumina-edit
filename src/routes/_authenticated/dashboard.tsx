@@ -111,9 +111,34 @@ function DashboardPage() {
                     <p className="mt-1 text-xs text-muted-foreground">
                       {formatDate(video.created_at ?? video.uploaded_at)}
                     </p>
-                    <div className="mt-3">
+                    <div className="mt-3 flex flex-wrap items-center gap-2">
                       <StatusBadge status={String(video.status)} />
                     </div>
+                    {["ready", "plan_ready", "approved", "rendering", "complete"].includes(
+                      String(video.status).toLowerCase(),
+                    ) && (
+                      <div
+                        className="mt-3 flex flex-wrap gap-2"
+                        onClick={(e) => e.stopPropagation()}
+                        onKeyDown={(e) => e.stopPropagation()}
+                      >
+                        <Button asChild size="sm" variant="secondary" className="h-7 text-xs">
+                          <Link to="/editor/$videoId" params={{ videoId: video.id }}>
+                            Editor
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm" variant="outline" className="h-7 text-xs">
+                          <Link to="/videos/$id/review" params={{ id: video.id }}>
+                            Review
+                          </Link>
+                        </Button>
+                        <Button asChild size="sm" variant="ghost" className="h-7 text-xs">
+                          <Link to="/videos/$id/thumbnails" params={{ id: video.id }}>
+                            Thumbs
+                          </Link>
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </Link>
               </li>

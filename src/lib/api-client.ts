@@ -6,13 +6,22 @@ import {
 import { isDemoMode } from "./runtime-config";
 import { demoRequest } from "./demo/demo-api";
 import type {
+  AgentEditResponse,
   ApproveResponse,
+  BrandKit,
+  BrandKitCreate,
   EditPlan,
+  EngagementResponse,
+  ExportOptions,
+  ExportPreset,
+  GeneratedThumbnail,
   PlanPatch,
   RenderJob,
   Scene,
+  SilenceDetection,
+  SmartClipsResponse,
   Transcript,
-  UploadTicket,
+  TranslateJob,
   Video,
 } from "./api-types";
 
@@ -95,10 +104,10 @@ type RequestOptions = {
   body?: unknown;
   signal?: AbortSignal;
   retryOn401?: boolean;
+  formData?: FormData;
 };
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
-  // Demo workspace: served from local fixtures over the exact same paths.
   if (isDemoMode()) {
     return demoRequest<T>({ path, method: options.method ?? "GET", body: options.body });
   }
@@ -110,12 +119,12 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
     );
   }
 
-  const { method = "GET", body, signal, retryOn401 = true } = options;
+  const { method = "GET", body, signal, retryOn401 = true, formData } = options;
   const token = getAccessToken();
 
   const headers: Record<string, string> = { accept: "application/json" };
   if (token) headers["authorization"] = `Bearer ${token}`;
-  if (body !== undefined) headers["content-type"] = "application/json";
+  if (body !== undefined && !formData) headers["content-type"] = "application/json";
 
   let response: Response;
   try {
@@ -123,7 +132,11 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
       method,
       headers,
       ...(signal ? { signal } : {}),
-      ...(body === undefined ? {} : { body: JSON.stringify(body) }),
+      ...(formData
+        ? { body: formData }
+        : body === undefined
+          ? {}
+          : { body: JSON.stringify(body) }),
     });
   } catch (cause) {
     if ((cause as Error)?.name === "AbortError") throw cause;
@@ -148,11 +161,7 @@ export async function apiRequest<T>(path: string, options: RequestOptions = {}):
 /* ---------------------------------------------------------------- endpoints */
 
 export const api = {
-  listVideos: () => apiRequest<Video[] | { items: Video[] }>("/api/v1/videos"),
-  createUpload: (input: { filename: string; content_type: string; size: number }) =>
-    apiRequest<UploadTicket>("/api/v1/videos/upload", { method: "POST", body: input }),
-  confirmUpload: (videoId: string) =>
-    apiRequest<Video>(`/api/v1/videos/${videoId}/confirm`, { method: "POST" }),
+  listVideos: () => apiRequest<Video[]>("/api/v1/videos"),
   getVideo: (videoId: string) => apiRequest<Video>(`/api/v1/videos/${videoId}`),
   getScenes: (videoId: string) =>
     apiRequest<Scene[] | { scenes: Scene[] }>(`/api/v1/videos/${videoId}/scenes`),
@@ -166,17 +175,129 @@ export const api = {
   getPlan: (planId: string) => apiRequest<EditPlan>(`/api/v1/edit-plans/${planId}`),
   patchPlan: (planId: string, patch: PlanPatch) =>
     apiRequest<EditPlan>(`/api/v1/edit-plans/${planId}`, { method: "PATCH", body: patch }),
-  approvePlan: (planId: string) =>
-    apiRequest<ApproveResponse>(`/api/v1/edit-plans/${planId}/approve`, { method: "POST" }),
+  approvePlan: (planId: string, options?: ExportOptions) =>
+    apiRequest<ApproveResponse>(`/api/v1/edit-plans/${planId}/approve`, {
+      method: "POST",
+      body: options ?? {},
+    }),
   revisePlan: (videoId: string, planId: string, instruction: string) =>
     apiRequest<EditPlan>(`/api/v1/videos/${videoId}/edit-plans/${planId}/revise`, {
       method: "POST",
       body: { instruction },
     }),
   getRenderJob: (jobId: string) => apiRequest<RenderJob>(`/api/v1/render-jobs/${jobId}`),
+  listRenderJobs: (videoId: string) =>
+    apiRequest<RenderJob[]>(`/api/v1/videos/${videoId}/render-jobs`),
+
+  getSmartClips: (videoId: string, targetDuration = 30, maxClips = 5) =>
+    apiRequest<SmartClipsResponse>(
+      `/api/v1/videos/${videoId}/smart-clips?target_duration=${targetDuration}&max_clips=${maxClips}`,
+    ),
+  getEngagement: (videoId: string) =>
+    apiRequest<EngagementResponse>(`/api/v1/videos/${videoId}/engagement`),
+  getSilenceDetection: (videoId: string, silenceThreshold = 1.5) =>
+    apiRequest<SilenceDetection>(
+      `/api/v1/videos/${videoId}/silence-detection?silence_threshold=${silenceThreshold}`,
+    ),
+
+  agentEdit: (videoId: string, instruction: string) =>
+    apiRequest<AgentEditResponse>("/api/v1/agent/edit", {
+      method: "POST",
+      body: { video_id: videoId, instruction },
+    }),
+
+  listExportPresets: () => apiRequest<{ presets: ExportPreset[] }>("/api/v1/export-presets"),
+  getExportPreset: (presetId: string) =>
+    apiRequest<ExportPreset>(`/api/v1/export-presets/${presetId}`),
+
+  listThumbnails: (videoId: string) =>
+    apiRequest<GeneratedThumbnail[]>(`/api/v1/videos/${videoId}/thumbnails`),
+  regenerateThumbnails: (videoId: string, count = 4, timestamps?: number[]) =>
+    apiRequest<GeneratedThumbnail[]>(`/api/v1/videos/${videoId}/thumbnails/regenerate`, {
+      method: "POST",
+      body: { count, timestamps: timestamps ?? null },
+    }),
+
+  listBrandKits: () => apiRequest<BrandKit[]>("/api/v1/brand-kits"),
+  createBrandKit: (body: BrandKitCreate) =>
+    apiRequest<BrandKit>("/api/v1/brand-kits", { method: "POST", body }),
+  updateBrandKit: (kitId: string, body: Partial<BrandKitCreate>) =>
+    apiRequest<BrandKit>(`/api/v1/brand-kits/${kitId}`, { method: "PATCH", body }),
+  deleteBrandKit: (kitId: string) =>
+    apiRequest<void>(`/api/v1/brand-kits/${kitId}`, { method: "DELETE" }),
+  uploadBrandLogo: (kitId: string, file: File) => {
+    const form = new FormData();
+    form.append("file", file, file.name);
+    return apiRequest<BrandKit>(`/api/v1/brand-kits/${kitId}/logo`, {
+      method: "POST",
+      formData: form,
+    });
+  },
+
+  translateVideo: (videoId: string, targetLanguage: string, sourceLanguage = "auto") =>
+    apiRequest<TranslateJob>(`/api/v1/videos/${videoId}/translate`, {
+      method: "POST",
+      body: {
+        target_language: targetLanguage,
+        source_language: sourceLanguage,
+        review_before_dub: true,
+      },
+    }),
+  dubVideo: (
+    videoId: string,
+    targetLanguage: string,
+    opts?: { voice_clone?: boolean; voice_clone_consent?: boolean; translate_job_id?: string },
+  ) =>
+    apiRequest<TranslateJob>(`/api/v1/videos/${videoId}/dub`, {
+      method: "POST",
+      body: {
+        target_language: targetLanguage,
+        voice_clone: opts?.voice_clone ?? false,
+        voice_clone_consent: opts?.voice_clone_consent ?? false,
+        translate_job_id: opts?.translate_job_id ?? null,
+      },
+    }),
+
+  exportCaptions: (videoId: string, format: "srt" | "vtt" = "srt") =>
+    apiDownload(`/api/v1/videos/${videoId}/captions/export?format=${format}`),
 };
 
-/** Normalises list responses that may be bare arrays or `{ items: [...] }`. */
+/** Binary download helper (captions SRT/VTT). */
+export async function apiDownload(path: string, signal?: AbortSignal): Promise<Blob> {
+  if (isDemoMode()) {
+    return new Blob([`1\n00:00:00,000 --> 00:00:02,000\nDemo caption\n`], {
+      type: "application/x-subrip",
+    });
+  }
+  if (!isApiConfigured()) {
+    throw new ApiError(0, "The API base URL is not configured. Set VITE_API_URL.");
+  }
+  const token = getAccessToken();
+  const headers: Record<string, string> = { accept: "*/*" };
+  if (token) headers["authorization"] = `Bearer ${token}`;
+
+  let response = await fetch(`${API_BASE_URL}${path}`, {
+    headers,
+    ...(signal ? { signal } : {}),
+  });
+  if (response.status === 401) {
+    const refreshed = await refreshAccessToken();
+    if (refreshed) {
+      const t2 = getAccessToken();
+      response = await fetch(`${API_BASE_URL}${path}`, {
+        headers: { accept: "*/*", ...(t2 ? { authorization: `Bearer ${t2}` } : {}) },
+        ...(signal ? { signal } : {}),
+      });
+    } else {
+      notifyUnauthorized();
+      throw new ApiError(401, "Your session expired.");
+    }
+  }
+  if (!response.ok) throw await readError(response);
+  return response.blob();
+}
+
+/** Normalises list responses that may be bare arrays or wrapped objects. */
 export function toArray<T>(value: T[] | { items?: T[] } | { scenes?: T[] } | undefined | null): T[] {
   if (!value) return [];
   if (Array.isArray(value)) return value;
@@ -184,7 +305,93 @@ export function toArray<T>(value: T[] | { items?: T[] } | { scenes?: T[] } | und
   return record.items ?? record.scenes ?? [];
 }
 
-/** Direct presigned upload with real progress. Uses XHR because fetch has no upload progress. */
+/**
+ * Upload a video file to the backend via multipart POST with XHR progress events.
+ * Returns the video_id from the 202 response body.
+ */
+export function uploadVideoFile(
+  file: File,
+  onProgress: (percent: number) => void,
+  signal?: AbortSignal,
+): Promise<string> {
+  if (isDemoMode()) {
+    return new Promise<string>((resolve, reject) => {
+      let percent = 0;
+      const timer = setInterval(() => {
+        percent = Math.min(100, percent + 7 + Math.random() * 9);
+        onProgress(Math.round(percent));
+        if (percent >= 100) {
+          clearInterval(timer);
+          demoRequest<{ video_id: string }>({
+            path: "/api/v1/videos/upload",
+            method: "POST",
+            body: { filename: file.name, size: file.size },
+          })
+            .then((r) => resolve(r.video_id))
+            .catch(reject);
+        }
+      }, 160);
+      signal?.addEventListener("abort", () => {
+        clearInterval(timer);
+        reject(new DOMException("Upload cancelled", "AbortError"));
+      });
+    });
+  }
+
+  if (!isApiConfigured()) {
+    return Promise.reject(
+      new ApiError(0, "The API base URL is not configured. Set VITE_API_URL."),
+    );
+  }
+
+  return new Promise<string>((resolve, reject) => {
+    const formData = new FormData();
+    formData.append("file", file, file.name);
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_BASE_URL}/api/v1/videos/upload`);
+
+    const token = getAccessToken();
+    if (token) xhr.setRequestHeader("authorization", `Bearer ${token}`);
+    xhr.setRequestHeader("accept", "application/json");
+    // Do NOT set content-type — the browser sets it with the correct multipart boundary.
+
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
+    };
+
+    xhr.onload = () => {
+      if (xhr.status === 202 || xhr.status === 200) {
+        try {
+          const body = JSON.parse(xhr.responseText) as { video_id?: string };
+          resolve(body.video_id ?? "");
+        } catch {
+          reject(new ApiError(xhr.status, "Unexpected response from server."));
+        }
+      } else if (xhr.status === 401) {
+        reject(new ApiError(401, "Your session expired. Please sign in again."));
+      } else {
+        let detail = `Upload failed (${xhr.status}).`;
+        try {
+          const body = JSON.parse(xhr.responseText) as { detail?: unknown };
+          if (body.detail) {
+            detail = Array.isArray(body.detail)
+              ? (body.detail as { msg?: string }[]).map((e) => e.msg ?? String(e)).join("; ")
+              : String(body.detail);
+          }
+        } catch { /* ignore */ }
+        reject(new ApiError(xhr.status, detail));
+      }
+    };
+
+    xhr.onerror = () => reject(new ApiError(0, "The upload connection dropped."));
+    xhr.onabort = () => reject(new DOMException("Upload cancelled", "AbortError"));
+    signal?.addEventListener("abort", () => xhr.abort());
+    xhr.send(formData);
+  });
+}
+
+/** @deprecated Kept for demo mode. Use uploadVideoFile for real uploads. */
 export function uploadToPresignedUrl(
   url: string,
   file: File,
@@ -192,7 +399,6 @@ export function uploadToPresignedUrl(
   signal?: AbortSignal,
 ) {
   if (url.startsWith("demo://")) {
-    // Simulated presigned upload so progress, cancel and retry are real in demo mode.
     return new Promise<void>((resolve, reject) => {
       let percent = 0;
       const timer = setInterval(() => {

@@ -2,6 +2,7 @@ import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useMutation } from "@tanstack/react-query";
 import { Download, Loader2, Play, Sparkles, Trash2, UploadCloud, Wand2 } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
 import { useMemo, useRef, useState } from "react";
 import { toast } from "sonner";
 
@@ -49,6 +50,7 @@ function readAsDataUrl(file: File) {
 
 function HighlightsPage() {
   const analyze = useServerFn(findHighlights);
+  const posthog = usePostHog();
   const inputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const stopAt = useRef<number | null>(null);
@@ -66,6 +68,10 @@ function HighlightsPage() {
   const mutation = useMutation({
     mutationFn: async () => {
       if (!file) throw new Error("Choose a video first.");
+      posthog.logger.info("highlight_analysis_requested", {
+        has_goal: Boolean(goal.trim()),
+        ...(duration > 0 ? { video_duration_seconds: Math.round(duration) } : {}),
+      });
       const dataUrl = await readAsDataUrl(file);
       return analyze({
         data: {
@@ -88,6 +94,10 @@ function HighlightsPage() {
           keep: true,
         })),
       );
+      posthog.capture("highlights_generated", {
+        highlight_count: result.highlights.length,
+        goal_provided: Boolean(goal.trim()),
+      });
       toast.success(`${result.highlights.length} highlight moments suggested.`);
     },
     onError: (error: Error) => toast.error(error.message),
@@ -124,6 +134,7 @@ function HighlightsPage() {
   }
 
   function exportClips() {
+    posthog.capture("highlights_exported", { clip_count: kept.length });
     const payload = {
       source: file?.name ?? "video",
       duration,

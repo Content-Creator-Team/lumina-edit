@@ -23,9 +23,7 @@ async function challengeFor(verifier: string) {
 }
 
 /**
- * Kicks off the hosted Keycloak authorization-code-with-PKCE flow. No
- * credentials are ever collected in-app; Keycloak owns the login and any
- * MFA/TOTP step, then redirects back to /auth/callback.
+ * Starts the hosted OIDC authorization-code + PKCE login redirect.
  */
 export async function startKeycloakLogin(returnTo?: string) {
   if (!isKeycloakConfigured()) {

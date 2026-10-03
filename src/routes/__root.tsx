@@ -8,6 +8,8 @@ import {
   Scripts,
 } from "@tanstack/react-router";
 import { useEffect, type ReactNode } from "react";
+import posthog from "posthog-js";
+import { PostHogProvider } from "posthog-js/react";
 
 import appCss from "../styles.css?url";
 import { reportLovableError } from "../lib/lovable-error-reporting";
@@ -42,6 +44,13 @@ function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
+
+    if (
+      import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN &&
+      import.meta.env.VITE_PUBLIC_POSTHOG_HOST
+    ) {
+      posthog.captureException(error);
+    }
   }, [error]);
 
   return (
@@ -133,8 +142,22 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
+  const posthogApiKey = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
+  const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
 
-  return (
+  if (import.meta.env.DEV && !posthogApiKey) {
+    throw new Error(
+      "VITE_PUBLIC_POSTHOG_PROJECT_TOKEN variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once VITE_PUBLIC_POSTHOG_PROJECT_TOKEN is configured",
+    );
+  }
+
+  if (import.meta.env.DEV && !posthogHost) {
+    throw new Error(
+      "VITE_PUBLIC_POSTHOG_HOST variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once VITE_PUBLIC_POSTHOG_HOST is configured",
+    );
+  }
+
+  const app = (
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <TooltipProvider>
@@ -145,5 +168,26 @@ function RootComponent() {
         </TooltipProvider>
       </ThemeProvider>
     </QueryClientProvider>
+  );
+
+  if (!posthogApiKey || !posthogHost) {
+    return app;
+  }
+
+  return (
+    <PostHogProvider
+      apiKey={posthogApiKey}
+      options={{
+        api_host: posthogHost,
+        defaults: "2025-05-24",
+        capture_exceptions: true,
+        logs: {
+          serviceName: "cutroom-web",
+          environment: import.meta.env.MODE,
+        },
+      }}
+    >
+      {app}
+    </PostHogProvider>
   );
 }

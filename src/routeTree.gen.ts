@@ -11,16 +11,23 @@
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AuthenticatedRouteImport } from './routes/_authenticated'
+import { Route as EditorRouteImport } from './routes/_editor'
+import { Route as ForgotPasswordRouteImport } from './routes/forgot-password'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ResetPasswordRouteImport } from './routes/reset-password'
+import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHighlightsRouteImport } from './routes/_authenticated/highlights'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTrimmerRouteImport } from './routes/_authenticated/trimmer'
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as EditorEditorVideoIdRouteImport } from './routes/_editor.editor.$videoId'
 import { Route as AuthenticatedVideosIdIndexRouteImport } from './routes/_authenticated/videos.$id.index'
 import { Route as AuthenticatedVideosIdRenderRouteImport } from './routes/_authenticated/videos.$id.render'
 import { Route as AuthenticatedVideosIdReviewRouteImport } from './routes/_authenticated/videos.$id.review'
+import { Route as AuthenticatedVideosIdThumbnailsRouteImport } from './routes/_authenticated/videos.$id.thumbnails'
 import { Route as AuthenticatedVideosIdVersionsRouteImport } from './routes/_authenticated/videos.$id.versions'
 
 const IndexRoute = IndexRouteImport.update({
@@ -32,9 +39,33 @@ const AuthenticatedRoute = AuthenticatedRouteImport.update({
   id: '/_authenticated',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EditorRoute = EditorRouteImport.update({
+  id: '/_editor',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ForgotPasswordRoute = ForgotPasswordRouteImport.update({
+  id: '/forgot-password',
+  path: '/forgot-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RegisterRoute = RegisterRouteImport.update({
+  id: '/register',
+  path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ResetPasswordRoute = ResetPasswordRouteImport.update({
+  id: '/reset-password',
+  path: '/reset-password',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const VerifyEmailRoute = VerifyEmailRouteImport.update({
+  id: '/verify-email',
+  path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -67,6 +98,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const EditorEditorVideoIdRoute = EditorEditorVideoIdRouteImport.update({
+  id: '/editor/$videoId',
+  path: '/editor/$videoId',
+  getParentRoute: () => EditorRoute,
+} as any)
 const AuthenticatedVideosIdIndexRoute =
   AuthenticatedVideosIdIndexRouteImport.update({
     id: '/videos/$id/',
@@ -85,6 +121,12 @@ const AuthenticatedVideosIdReviewRoute =
     path: '/videos/$id/review',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedVideosIdThumbnailsRoute =
+  AuthenticatedVideosIdThumbnailsRouteImport.update({
+    id: '/videos/$id/thumbnails',
+    path: '/videos/$id/thumbnails',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedVideosIdVersionsRoute =
   AuthenticatedVideosIdVersionsRouteImport.update({
     id: '/videos/$id/versions',
@@ -94,29 +136,41 @@ const AuthenticatedVideosIdVersionsRoute =
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/highlights': typeof AuthenticatedHighlightsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/trimmer': typeof AuthenticatedTrimmerRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/editor/$videoId': typeof EditorEditorVideoIdRoute
   '/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
   '/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
+  '/videos/$id/thumbnails': typeof AuthenticatedVideosIdThumbnailsRoute
   '/videos/$id/versions': typeof AuthenticatedVideosIdVersionsRoute
   '/videos/$id/': typeof AuthenticatedVideosIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/highlights': typeof AuthenticatedHighlightsRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/trimmer': typeof AuthenticatedTrimmerRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/editor/$videoId': typeof EditorEditorVideoIdRoute
   '/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
   '/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
+  '/videos/$id/thumbnails': typeof AuthenticatedVideosIdThumbnailsRoute
   '/videos/$id/versions': typeof AuthenticatedVideosIdVersionsRoute
   '/videos/$id': typeof AuthenticatedVideosIdIndexRoute
 }
@@ -124,15 +178,22 @@ export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
   '/_authenticated': typeof AuthenticatedRouteWithChildren
+  '/_editor': typeof EditorRouteWithChildren
+  '/forgot-password': typeof ForgotPasswordRoute
   '/login': typeof LoginRoute
+  '/register': typeof RegisterRoute
+  '/reset-password': typeof ResetPasswordRoute
+  '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/highlights': typeof AuthenticatedHighlightsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/trimmer': typeof AuthenticatedTrimmerRoute
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/_editor/editor/$videoId': typeof EditorEditorVideoIdRoute
   '/_authenticated/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
   '/_authenticated/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
+  '/_authenticated/videos/$id/thumbnails': typeof AuthenticatedVideosIdThumbnailsRoute
   '/_authenticated/videos/$id/versions': typeof AuthenticatedVideosIdVersionsRoute
   '/_authenticated/videos/$id/': typeof AuthenticatedVideosIdIndexRoute
 }
@@ -140,44 +201,63 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/forgot-password'
     | '/login'
+    | '/register'
+    | '/reset-password'
+    | '/verify-email'
     | '/dashboard'
     | '/highlights'
     | '/settings'
     | '/trimmer'
     | '/upload'
     | '/auth/callback'
+    | '/editor/$videoId'
     | '/videos/$id/render'
     | '/videos/$id/review'
+    | '/videos/$id/thumbnails'
     | '/videos/$id/versions'
     | '/videos/$id/'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/forgot-password'
     | '/login'
+    | '/register'
+    | '/reset-password'
+    | '/verify-email'
     | '/dashboard'
     | '/highlights'
     | '/settings'
     | '/trimmer'
     | '/upload'
     | '/auth/callback'
+    | '/editor/$videoId'
     | '/videos/$id/render'
     | '/videos/$id/review'
+    | '/videos/$id/thumbnails'
     | '/videos/$id/versions'
     | '/videos/$id'
   id:
     | '__root__'
     | '/'
     | '/_authenticated'
+    | '/_editor'
+    | '/forgot-password'
     | '/login'
+    | '/register'
+    | '/reset-password'
+    | '/verify-email'
     | '/_authenticated/dashboard'
     | '/_authenticated/highlights'
     | '/_authenticated/settings'
     | '/_authenticated/trimmer'
     | '/_authenticated/upload'
     | '/auth/callback'
+    | '/_editor/editor/$videoId'
     | '/_authenticated/videos/$id/render'
     | '/_authenticated/videos/$id/review'
+    | '/_authenticated/videos/$id/thumbnails'
     | '/_authenticated/videos/$id/versions'
     | '/_authenticated/videos/$id/'
   fileRoutesById: FileRoutesById
@@ -185,7 +265,12 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   AuthenticatedRoute: typeof AuthenticatedRouteWithChildren
+  EditorRoute: typeof EditorRouteWithChildren
+  ForgotPasswordRoute: typeof ForgotPasswordRoute
   LoginRoute: typeof LoginRoute
+  RegisterRoute: typeof RegisterRoute
+  ResetPasswordRoute: typeof ResetPasswordRoute
+  VerifyEmailRoute: typeof VerifyEmailRoute
   AuthCallbackRoute: typeof AuthCallbackRoute
 }
 
@@ -205,11 +290,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_editor': {
+      id: '/_editor'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof EditorRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/forgot-password': {
+      id: '/forgot-password'
+      path: '/forgot-password'
+      fullPath: '/forgot-password'
+      preLoaderRoute: typeof ForgotPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
       fullPath: '/login'
       preLoaderRoute: typeof LoginRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/register': {
+      id: '/register'
+      path: '/register'
+      fullPath: '/register'
+      preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/reset-password': {
+      id: '/reset-password'
+      path: '/reset-password'
+      fullPath: '/reset-password'
+      preLoaderRoute: typeof ResetPasswordRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/verify-email': {
+      id: '/verify-email'
+      path: '/verify-email'
+      fullPath: '/verify-email'
+      preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/_authenticated/dashboard': {
@@ -254,6 +374,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_editor/editor/$videoId': {
+      id: '/_editor/editor/$videoId'
+      path: '/editor/$videoId'
+      fullPath: '/editor/$videoId'
+      preLoaderRoute: typeof EditorEditorVideoIdRouteImport
+      parentRoute: typeof EditorRoute
+    }
     '/_authenticated/videos/$id/': {
       id: '/_authenticated/videos/$id/'
       path: '/videos/$id'
@@ -275,6 +402,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVideosIdReviewRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/videos/$id/thumbnails': {
+      id: '/_authenticated/videos/$id/thumbnails'
+      path: '/videos/$id/thumbnails'
+      fullPath: '/videos/$id/thumbnails'
+      preLoaderRoute: typeof AuthenticatedVideosIdThumbnailsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/videos/$id/versions': {
       id: '/_authenticated/videos/$id/versions'
       path: '/videos/$id/versions'
@@ -293,6 +427,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
   AuthenticatedVideosIdRenderRoute: typeof AuthenticatedVideosIdRenderRoute
   AuthenticatedVideosIdReviewRoute: typeof AuthenticatedVideosIdReviewRoute
+  AuthenticatedVideosIdThumbnailsRoute: typeof AuthenticatedVideosIdThumbnailsRoute
   AuthenticatedVideosIdVersionsRoute: typeof AuthenticatedVideosIdVersionsRoute
   AuthenticatedVideosIdIndexRoute: typeof AuthenticatedVideosIdIndexRoute
 }
@@ -305,6 +440,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedUploadRoute: AuthenticatedUploadRoute,
   AuthenticatedVideosIdRenderRoute: AuthenticatedVideosIdRenderRoute,
   AuthenticatedVideosIdReviewRoute: AuthenticatedVideosIdReviewRoute,
+  AuthenticatedVideosIdThumbnailsRoute: AuthenticatedVideosIdThumbnailsRoute,
   AuthenticatedVideosIdVersionsRoute: AuthenticatedVideosIdVersionsRoute,
   AuthenticatedVideosIdIndexRoute: AuthenticatedVideosIdIndexRoute,
 }
@@ -313,10 +449,26 @@ const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
   AuthenticatedRouteChildren,
 )
 
+interface EditorRouteChildren {
+  EditorEditorVideoIdRoute: typeof EditorEditorVideoIdRoute
+}
+
+const EditorRouteChildren: EditorRouteChildren = {
+  EditorEditorVideoIdRoute: EditorEditorVideoIdRoute,
+}
+
+const EditorRouteWithChildren =
+  EditorRoute._addFileChildren(EditorRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   AuthenticatedRoute: AuthenticatedRouteWithChildren,
+  EditorRoute: EditorRouteWithChildren,
+  ForgotPasswordRoute: ForgotPasswordRoute,
   LoginRoute: LoginRoute,
+  RegisterRoute: RegisterRoute,
+  ResetPasswordRoute: ResetPasswordRoute,
+  VerifyEmailRoute: VerifyEmailRoute,
   AuthCallbackRoute: AuthCallbackRoute,
 }
 export const routeTree = rootRouteImport

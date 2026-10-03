@@ -33,12 +33,16 @@ function extractJson(text: string): unknown {
   return JSON.parse(raw.slice(first, last + 1));
 }
 
-async function readStream(response: Response) {
+const AI_GATEWAY_URL = "https://ai.gateway.lovable.dev/v1/chat/completions";
+const AI_MODEL = "google/gemini-3.8-flash";
+
+async function readStream(response: Response, startedAt: number) {
   const reader = response.body?.getReader();
-  if (!reader) return "";
+  if (!reader) return { text: "", timeToFirstToken: null };
   const decoder = new TextDecoder();
   let buffer = "";
   let text = "";
+  let timeToFirstToken: number | null = null;
   for (;;) {
     const { done, value } = await reader.read();
     if (done) break;
@@ -54,13 +58,17 @@ async function readStream(response: Response) {
         const chunk = JSON.parse(payload) as {
           choices?: Array<{ delta?: { content?: string }; message?: { content?: string } }>;
         };
-        text += chunk.choices?.[0]?.delta?.content ?? chunk.choices?.[0]?.message?.content ?? "";
+        const content = chunk.choices?.[0]?.delta?.content ?? chunk.choices?.[0]?.message?.content ?? "";
+        if (content && timeToFirstToken === null) {
+          timeToFirstToken = (performance.now() - startedAt) / 1_000;
+        }
+        text += content;
       } catch {
         /* partial frame — ignored, the next chunk completes it */
       }
     }
   }
-  return text;
+  return { text, timeToFirstToken };
 }
 
 export const findHighlights = createServerFn({ method: "POST" })
@@ -83,30 +91,82 @@ export const findHighlights = createServerFn({ method: "POST" })
       .filter(Boolean)
       .join("\n");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "content-type": "application/json",
-        "Lovable-API-Key": key,
-        "X-Lovable-AIG-SDK": "fetch",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-3.8-flash",
-        stream: true,
-        messages: [
-          {
-            role: "user",
-            content: [
-              { type: "text", text: prompt },
-              { type: "video_url", video_url: { url: data.dataUrl } },
-            ],
-          },
-        ],
-      }),
+    const [{ captureAiGeneration }, { emitPostHogLog }] = await Promise.all([
+      import("./posthog-ai.server"),
+      import("./posthog-logs.server"),
+    ]);
+    const aiSessionId = crypto.randomUUID();
+    const aiTraceId = crypto.randomUUID();
+    const startedAt = performance.now();
+    const captureGeneration = (properties: Record<string, unknown>) =>
+      captureAiGeneration(
+        {
+          $ai_trace_id: aiTraceId,
+          $ai_session_id: aiSessionId,
+          $ai_span_name: "find_highlights",
+          $ai_model: AI_MODEL,
+          $ai_provider: "google",
+          $ai_input: [{ role: "user", content: prompt }],
+          $ai_stream: true,
+          $ai_base_url: new URL(AI_GATEWAY_URL).origin,
+          $ai_request_url: AI_GATEWAY_URL,
+          ...properties,
+        },
+        aiSessionId,
+      );
+
+    emitPostHogLog("info", "highlight_analysis_started", {
+      has_goal: Boolean(data.goal),
+      ...(known === null ? {} : { video_duration_seconds: Math.round(known) }),
     });
+
+    let response: Response;
+    try {
+      response = await fetch(AI_GATEWAY_URL, {
+        method: "POST",
+        headers: {
+          "content-type": "application/json",
+          "Lovable-API-Key": key,
+          "X-Lovable-AIG-SDK": "fetch",
+        },
+        body: JSON.stringify({
+          model: AI_MODEL,
+          stream: true,
+          messages: [
+            {
+              role: "user",
+              content: [
+                { type: "text", text: prompt },
+                { type: "video_url", video_url: { url: data.dataUrl } },
+              ],
+            },
+          ],
+        }),
+      });
+    } catch (error) {
+      await captureGeneration({
+        $ai_latency: (performance.now() - startedAt) / 1_000,
+        $ai_is_error: true,
+        $ai_error: error instanceof Error ? error.message : "AI gateway request failed",
+      });
+      emitPostHogLog("error", "highlight_analysis_gateway_request_failed", {
+        failure_stage: "request",
+      });
+      throw error;
+    }
 
     if (!response.ok) {
       const detail = await response.text().catch(() => "");
+      await captureGeneration({
+        $ai_latency: (performance.now() - startedAt) / 1_000,
+        $ai_http_status: response.status,
+        $ai_is_error: true,
+        $ai_error: `HTTP ${response.status}`,
+      });
+      emitPostHogLog("error", "highlight_analysis_gateway_request_failed", {
+        failure_stage: "response",
+        http_status: response.status,
+      });
       if (response.status === 429) {
         throw new Error("AI is busy right now. Wait a moment and run the analysis again.");
       }
@@ -118,7 +178,13 @@ export const findHighlights = createServerFn({ method: "POST" })
       );
     }
 
-    const text = await readStream(response);
+    const { text, timeToFirstToken } = await readStream(response, startedAt);
+    await captureGeneration({
+      $ai_latency: (performance.now() - startedAt) / 1_000,
+      $ai_http_status: response.status,
+      $ai_output_choices: [{ role: "assistant", content: text }],
+      ...(timeToFirstToken === null ? {} : { $ai_time_to_first_token: timeToFirstToken }),
+    });
     const parsed = extractJson(text) as {
       summary?: string;
       highlights?: Array<Partial<HighlightSuggestion>>;
@@ -143,6 +209,11 @@ export const findHighlights = createServerFn({ method: "POST" })
     if (highlights.length === 0) {
       throw new Error("The model found no highlight moments in this footage.");
     }
+
+    emitPostHogLog("info", "highlight_analysis_completed", {
+      highlight_count: highlights.length,
+      latency_ms: Math.round(performance.now() - startedAt),
+    });
 
     return { highlights, summary: String(parsed.summary ?? "") };
   });

@@ -1,7 +1,5 @@
 /**
- * Server-only Keycloak helpers. Token exchange and refresh happen here so the
- * refresh token never reaches the browser; both tokens live in httpOnly
- * cookies.
+ * Server-only session helpers. Token decode/refresh for httpOnly cookies.
  */
 
 export type KeycloakServerConfig = {
@@ -75,7 +73,7 @@ export type SessionUser = {
   roles: string[];
 };
 
-/** Decodes a JWT payload. The token is only ever obtained directly from Keycloak over TLS. */
+/** Decodes a JWT payload (no signature verification — server-issued tokens only). */
 export function decodeJwt(token: string): Record<string, unknown> | null {
   try {
     const payload = token.split(".")[1];
@@ -94,19 +92,15 @@ export function userFromToken(token: string): SessionUser | null {
   const claims = decodeJwt(token);
   if (!claims || typeof claims["sub"] !== "string") return null;
 
-  const realmAccess = claims["realm_access"] as { roles?: string[] } | undefined;
-  const org =
-    (claims["organization"] as string | undefined) ??
-    (claims["org"] as string | undefined) ??
-    (claims["org_name"] as string | undefined) ??
-    null;
+  // Native JWT has `role` (single string); map to roles array for compatibility
+  const role = claims["role"] as string | undefined;
 
   return {
     sub: claims["sub"],
-    name: (claims["name"] as string | undefined) ?? (claims["preferred_username"] as string) ?? null,
+    name: (claims["full_name"] as string | undefined) ?? (claims["email"] as string | undefined) ?? null,
     email: (claims["email"] as string | undefined) ?? null,
-    org: typeof org === "string" ? org : null,
-    roles: Array.isArray(realmAccess?.roles) ? realmAccess.roles : [],
+    org: null,
+    roles: role ? [role] : [],
   };
 }
 

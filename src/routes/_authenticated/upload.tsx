@@ -1,11 +1,12 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useQueryClient } from "@tanstack/react-query";
 import { AlertTriangle, FileVideo, Loader2, UploadCloud, X } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
 import { useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { ApiError, api, uploadToPresignedUrl } from "@/lib/api-client";
+import { ApiError, uploadVideoFile } from "@/lib/api-client";
 
 export const Route = createFileRoute("/_authenticated/upload")({
   head: () => ({
@@ -25,7 +26,7 @@ export const Route = createFileRoute("/_authenticated/upload")({
   component: UploadPage,
 });
 
-const MAX_BYTES = 5 * 1024 * 1024 * 1024; // 5 GB
+const MAX_BYTES = 2 * 1024 * 1024 * 1024; // 2 GB
 const ACCEPTED_EXTENSIONS = [".mp4", ".mov", ".mkv"];
 
 function validate(file: File): string | null {
@@ -35,7 +36,7 @@ function validate(file: File): string | null {
   }
   if (file.size === 0) return "That file is empty.";
   if (file.size > MAX_BYTES) {
-    return `That file is ${(file.size / 1024 ** 3).toFixed(1)} GB. The limit is 5 GB.`;
+    return `That file is ${(file.size / 1024 ** 3).toFixed(1)} GB. The limit is 2 GB.`;
   }
   return null;
 }
@@ -45,12 +46,14 @@ function formatSize(bytes: number) {
   return `${(bytes / 1024 ** 2).toFixed(1)} MB`;
 }
 
-type Phase = "idle" | "requesting" | "uploading" | "confirming" | "error";
+type Phase = "idle" | "uploading" | "error";
 
 function UploadPage() {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const posthog = usePostHog();
   const inputRef = useRef<HTMLInputElement>(null);
+  const abortRef = useRef<AbortController | null>(null);
 
   const [file, setFile] = useState<File | null>(null);
   const [dragging, setDragging] = useState(false);
@@ -71,25 +74,23 @@ function UploadPage() {
     if (!file) return;
     setError(null);
     setProgress(0);
+    const ctrl = new AbortController();
+    abortRef.current = ctrl;
 
     try {
-      setPhase("requesting");
-      const ticket = await api.createUpload({
-        filename: file.name,
-        content_type: file.type || "video/mp4",
-        size: file.size,
-      });
-
       setPhase("uploading");
-      await uploadToPresignedUrl(ticket.upload_url, file, setProgress);
-
-      setPhase("confirming");
-      await api.confirmUpload(ticket.video_id);
-
+      const videoId = await uploadVideoFile(file, setProgress, ctrl.signal);
+      posthog.capture("video_uploaded", {
+        file_extension: file.name.split(".").pop()?.toLowerCase() ?? "unknown",
+        file_size_mb: Math.round(file.size / 1024 ** 2),
+      });
       await queryClient.invalidateQueries({ queryKey: ["videos"] });
-      navigate({ to: "/videos/$id", params: { id: ticket.video_id } });
+      navigate({ to: "/videos/$id", params: { id: videoId } });
     } catch (cause) {
-      // The selected file is intentionally preserved so a retry costs one click.
+      if ((cause as Error)?.name === "AbortError") {
+        setPhase("idle");
+        return;
+      }
       setPhase("error");
       setError(
         cause instanceof ApiError
@@ -98,17 +99,22 @@ function UploadPage() {
             ? cause.message
             : "The upload failed. Please try again.",
       );
+    } finally {
+      abortRef.current = null;
     }
   }
 
-  const busy = phase === "requesting" || phase === "uploading" || phase === "confirming";
+  function cancelUpload() {
+    abortRef.current?.abort();
+  }
+
+  const busy = phase === "uploading";
 
   return (
     <div className="mx-auto max-w-2xl">
       <h1 className="font-[family-name:var(--font-display)] text-3xl">Upload footage</h1>
       <p className="mt-2 text-sm text-muted-foreground">
-        MP4, MOV or MKV, up to 5 GB. The file uploads straight to storage — nothing passes through
-        this page.
+        MP4, MOV or MKV, up to 2 GB.
       </p>
 
       <div
@@ -171,16 +177,11 @@ function UploadPage() {
             )}
           </div>
 
-          {(phase === "uploading" || phase === "confirming") && (
+          {phase === "uploading" && (
             <div className="mt-4">
-              <Progress
-                value={phase === "confirming" ? 100 : progress}
-                aria-label="Upload progress"
-              />
+              <Progress value={progress} aria-label="Upload progress" />
               <p role="status" className="mt-2 text-xs text-muted-foreground">
-                {phase === "confirming"
-                  ? "Finalising upload…"
-                  : `Uploading — ${progress}% complete`}
+                Uploading — {progress}% complete
               </p>
             </div>
           )}
@@ -188,16 +189,13 @@ function UploadPage() {
           <div className="mt-4 flex items-center gap-3">
             <Button onClick={() => void startUpload()} disabled={busy}>
               {busy && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-              {phase === "requesting"
-                ? "Preparing upload…"
-                : phase === "uploading"
-                  ? "Uploading…"
-                  : phase === "confirming"
-                    ? "Finalising…"
-                    : phase === "error"
-                      ? "Retry upload"
-                      : "Start upload"}
+              {phase === "uploading" ? "Uploading…" : phase === "error" ? "Retry upload" : "Start upload"}
             </Button>
+            {busy && (
+              <Button variant="outline" onClick={cancelUpload}>
+                Cancel
+              </Button>
+            )}
           </div>
         </div>
       )}

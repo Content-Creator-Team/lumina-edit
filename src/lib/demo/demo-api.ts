@@ -199,7 +199,7 @@ export async function demoRequest<T>({ path, method, body }: DemoRequest): Promi
         id,
         filename: input.filename ?? "untitled.mp4",
         name: (input.filename ?? "Untitled clip").replace(/\.[^.]+$/, ""),
-        status: "uploading",
+        status: "processing",
         created_at: new Date().toISOString(),
         duration: 168,
         thumbnail_url: null,
@@ -207,7 +207,7 @@ export async function demoRequest<T>({ path, method, body }: DemoRequest): Promi
         stages: null,
       };
       state.seeds.unshift({ video, scenes: [], transcript: [], plans: [], renderJobs: [] });
-      return send({ upload_url: `demo://storage/${id}`, video_id: id });
+      return send({ video_id: id, status: "processing" });
     }
 
     const videoId = parts[1] ?? "";
@@ -226,6 +226,99 @@ export async function demoRequest<T>({ path, method, body }: DemoRequest): Promi
     if (tail === "transcript" && method === "GET") return send({ segments: seed.transcript });
     if (tail === "edit-plan" && method === "GET") return send(currentPlan(seed));
     if (tail === "edit-plans" && method === "GET" && parts.length === 3) return send(seed.plans);
+
+    if (tail === "smart-clips" && method === "GET") {
+      return send({
+        video_id: videoId,
+        total_analyzed: seed.video.duration ?? 120,
+        clips: [
+          {
+            start: 5,
+            end: 35,
+            score: 82,
+            hook: "Opening hook",
+            reason: "High energy start",
+            tags: ["hook"],
+          },
+        ],
+      });
+    }
+    if (tail === "engagement" && method === "GET") {
+      return send({
+        video_id: videoId,
+        total_score: 74,
+        grade: "B",
+        signals: [
+          { name: "Hook", score: 80, weight: 1, explanation: "Strong opening" },
+          { name: "Pacing", score: 70, weight: 1, explanation: "Steady pace" },
+        ],
+        suggestions: ["Tighten the middle section"],
+        strong_hooks: [],
+        metadata: {},
+      });
+    }
+    if (tail === "silence-detection" && method === "GET") {
+      return send({
+        video_id: videoId,
+        silences: [{ start: 12, end: 15, duration: 3, severity: "medium" }],
+        fillers: [{ start: 20, end: 20.4, text: "um", segment_id: "demo" }],
+        total_silence_s: 3,
+        total_filler_s: 0.4,
+        saveable_s: 3.4,
+        wpm_before: 120,
+        wpm_after: 135,
+      });
+    }
+    if (tail === "thumbnails" && method === "GET") {
+      return send([
+        {
+          id: "thumb-1",
+          video_id: videoId,
+          url: "https://placehold.co/640x360/png?text=Thumb+1",
+          variant: "ai",
+          timestamp: 5,
+          label: "Option @ 5.0s",
+        },
+      ]);
+    }
+    if (tail === "thumbnails" && parts[3] === "regenerate" && method === "POST") {
+      return send([
+        {
+          id: `thumb-${Math.random().toString(36).slice(2, 6)}`,
+          video_id: videoId,
+          url: "https://placehold.co/640x360/png?text=New",
+          variant: "ai",
+          timestamp: 8,
+          label: "Regenerated",
+        },
+      ]);
+    }
+    if (tail === "translate" && method === "POST") {
+      return send({
+        job_id: `tr_demo`,
+        video_id: videoId,
+        status: "preview_ready",
+        target_language: (body as { target_language?: string })?.target_language ?? "hi",
+        message: "Demo translation preview",
+        preview_segments: [{ source_text: "Hello", translated_text: "[hi] Hello", status: "draft_stub" }],
+      });
+    }
+    if (tail === "dub" && method === "POST") {
+      return send({
+        job_id: `dub_demo`,
+        video_id: videoId,
+        status: "queued_stub",
+        target_language: (body as { target_language?: string })?.target_language ?? "hi",
+        message: "Demo dubbing stub accepted",
+        preview_segments: [],
+      });
+    }
+    if (tail === "captions" && parts[3] === "export" && method === "GET") {
+      return send("1\n00:00:00,000 --> 00:00:02,000\nDemo caption\n");
+    }
+    if (tail === "render-jobs" && method === "GET") {
+      return send(seed.renderJobs);
+    }
 
     // /videos/{id}/edit-plans/{planId}/revise
     if (tail === "edit-plans" && parts[4] === "revise" && method === "POST") {
@@ -296,6 +389,68 @@ export async function demoRequest<T>({ path, method, body }: DemoRequest): Promi
       if (job) return send(job);
     }
     throw notFound(`Render job ${jobId} was not found.`);
+  }
+
+  // Studio / agent (demo stubs)
+  if (parts[0] === "export-presets" && method === "GET") {
+    return send({
+      presets: [
+        {
+          id: "youtube_shorts",
+          label: "YouTube Shorts",
+          platform: "youtube_shorts",
+          aspect_ratio: "9:16",
+          width: 1080,
+          height: 1920,
+          max_duration_s: 60,
+          fps: 30,
+          video_bitrate: "8M",
+          audio_bitrate: "192k",
+          caption_safe_margin: 0.18,
+          description: "Vertical Shorts",
+        },
+        {
+          id: "youtube_1080p",
+          label: "YouTube 1080p",
+          platform: "youtube",
+          aspect_ratio: "16:9",
+          width: 1920,
+          height: 1080,
+          max_duration_s: null,
+          fps: 30,
+          video_bitrate: "8M",
+          audio_bitrate: "192k",
+          caption_safe_margin: 0.12,
+          description: "Landscape",
+        },
+      ],
+    });
+  }
+
+  if (parts[0] === "brand-kits") {
+    if (method === "GET" && parts.length === 1) return send([]);
+    if (method === "POST" && parts.length === 1) {
+      return send({
+        id: `kit-${Math.random().toString(36).slice(2, 6)}`,
+        name: (body as { name?: string })?.name ?? "Demo kit",
+        primary_color: (body as { primary_color?: string })?.primary_color ?? "#0ea5e9",
+        is_default: true,
+        created_at: new Date().toISOString(),
+      });
+    }
+  }
+
+  if (parts[0] === "agent" && parts[1] === "edit" && method === "POST") {
+    return send({
+      video_id: (body as { video_id?: string })?.video_id,
+      edit_plan: {
+        video_id: (body as { video_id?: string })?.video_id,
+        instruction: (body as { instruction?: string })?.instruction ?? "",
+        operations: [{ type: "cut", start_time: 10, end_time: 12, reason: "Silence" }],
+        summary: "Removed a short silence gap.",
+      },
+      llm_available: false,
+    });
   }
 
   throw notFound(`${method} ${path} is not part of the demo workspace.`);

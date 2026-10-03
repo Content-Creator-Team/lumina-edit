@@ -1,16 +1,16 @@
-import { createFileRoute, useNavigate } from "@tanstack/react-router";
-import { LogIn, ShieldAlert } from "lucide-react";
-import { useEffect, useState } from "react";
+import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
+import { Eye, EyeOff, KeyRound, Loader2, LogIn } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
+import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useAuth } from "@/lib/auth-context";
-import { isKeycloakConfigured } from "@/lib/keycloak-config";
+import { loginWithPassword, verifyMfa, type MfaChallenge } from "@/lib/auth.functions";
 import { isDemoMode } from "@/lib/runtime-config";
-import { startKeycloakLogin } from "@/lib/keycloak-login";
 
 const TITLE = "Log in — Cutroom";
-const DESCRIPTION =
-  "Sign in to Cutroom with your organisation's single sign-on to upload footage and review AI edit plans.";
+const DESCRIPTION = "Sign in to Cutroom to upload footage and review AI edit plans.";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>): { redirect?: string } =>
@@ -31,36 +31,61 @@ export const Route = createFileRoute("/login")({
 
 function LoginPage() {
   const { redirect } = Route.useSearch();
-  const { isAuthenticated, startDemoSession } = useAuth();
+  const { applySession, startDemoSession } = useAuth();
   const navigate = useNavigate();
-  const [redirecting, setRedirecting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-  const configured = isKeycloakConfigured();
+  const posthog = usePostHog();
   const demo = isDemoMode();
+  const dest = redirect && redirect.startsWith("/") ? redirect : "/dashboard";
 
-  useEffect(() => {
-    if (isAuthenticated) {
-      navigate({
-        to: redirect && redirect.startsWith("/") ? redirect : "/dashboard",
-        replace: true,
-      });
-    }
-  }, [isAuthenticated, navigate, redirect]);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  async function handleLogin() {
-    setError(null);
+  const [mfaChallenge, setMfaChallenge] = useState<MfaChallenge | null>(null);
+  const [mfaCode, setMfaCode] = useState("");
+
+  async function handleLogin(e: React.FormEvent) {
+    e.preventDefault();
     if (demo) {
-      // Demo mode never leaves the app: no Keycloak redirect is attempted.
       startDemoSession();
-      navigate({ to: redirect && redirect.startsWith("/") ? redirect : "/dashboard", replace: true });
+      posthog.capture("user_logged_in", { method: "demo" });
+      navigate({ to: dest, replace: true });
       return;
     }
-    setRedirecting(true);
+    setError(null);
+    setLoading(true);
     try {
-      await startKeycloakLogin(redirect);
-    } catch (cause) {
-      setRedirecting(false);
-      setError(cause instanceof Error ? cause.message : "Could not start the sign-in flow.");
+      const result = await loginWithPassword({ data: { email, password, remember_me: false } });
+      if ("mfa_required" in result) {
+        setMfaChallenge(result);
+      } else {
+        applySession(result);
+        posthog.capture("user_logged_in", { method: "password" });
+        navigate({ to: dest, replace: true });
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Login failed. Check your credentials.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleMfa(e: React.FormEvent) {
+    e.preventDefault();
+    if (!mfaChallenge) return;
+    setError(null);
+    setLoading(true);
+    try {
+      const session = await verifyMfa({ data: { session_token: mfaChallenge.session_token, code: mfaCode } });
+      applySession(session);
+      posthog.capture("user_logged_in", { method: "mfa" });
+      navigate({ to: dest, replace: true });
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid code. Try again.");
+    } finally {
+      setLoading(false);
     }
   }
 
@@ -74,57 +99,124 @@ function LoginPage() {
             "radial-gradient(70% 55% at 50% 0%, color-mix(in oklab, var(--tint-1) 16%, transparent), transparent 70%)",
         }}
       />
-      <div className="relative w-full max-w-sm text-center">
-        <span
-          aria-hidden="true"
-          className="mx-auto flex size-12 items-center justify-center rounded-xl"
-          style={{
-            background: "linear-gradient(140deg, var(--primary), var(--primary-deep))",
-          }}
-        />
-        <h1 className="mt-8 font-[family-name:var(--font-display)] text-3xl">Cutroom</h1>
-        <p className="mt-3 text-sm leading-relaxed text-cinema-muted">
-          {demo
-            ? "This preview runs a self-contained demo workspace. Continue to explore it with sample projects — no account or configuration needed."
-            : "Sign in with your organisation account. You'll complete authentication — including any multi-factor step — on your identity provider."}
-        </p>
-
-        <Button
-          onClick={handleLogin}
-          disabled={redirecting || (!configured && !demo)}
-          size="lg"
-          className="mt-8 w-full bg-cinema-ember text-cinema-void hover:bg-cinema-ember/90"
-        >
-          <LogIn className="size-4" aria-hidden="true" />
-          {demo ? "Enter demo workspace" : redirecting ? "Redirecting to sign-in…" : "Log in"}
-        </Button>
-
-        {demo && (
-          <p
-            role="status"
-            className="mt-5 rounded-md border border-border p-3 text-left text-xs leading-relaxed text-muted-foreground"
-          >
-            Demo mode is active because no live configuration was found. Set VITE_API_URL and the
-            VITE_KEYCLOAK_* values (see .env.example) and the app switches to real Keycloak
-            single sign-on and the FastAPI service automatically.
+      <div className="relative w-full max-w-sm">
+        <div className="text-center">
+          <span
+            aria-hidden="true"
+            className="mx-auto flex size-12 items-center justify-center rounded-xl"
+            style={{ background: "linear-gradient(140deg, var(--primary), var(--primary-deep))" }}
+          />
+          <h1 className="mt-8 font-[family-name:var(--font-display)] text-3xl">Cutroom</h1>
+          <p className="mt-2 text-sm text-cinema-muted">
+            {mfaChallenge ? "Enter your authenticator code to continue." : "Sign in to your account."}
           </p>
-        )}
+        </div>
 
-        {!configured && !demo && (
-          <p
-            role="status"
-            className="mt-5 flex items-start gap-2 rounded-md border border-cinema-line p-3 text-left text-xs leading-relaxed text-cinema-muted"
-          >
-            <ShieldAlert className="mt-0.5 size-4 shrink-0 text-cinema-ember" aria-hidden="true" />
-            Single sign-on is not configured yet. Set VITE_KEYCLOAK_URL, VITE_KEYCLOAK_REALM and
-            VITE_KEYCLOAK_CLIENT_ID (see .env.example) to enable login.
-          </p>
-        )}
+        {mfaChallenge ? (
+          <form onSubmit={handleMfa} className="mt-8 space-y-4">
+            <div>
+              <label htmlFor="mfa-code" className="mb-1.5 block text-sm font-medium">
+                Authenticator code
+              </label>
+              <Input
+                id="mfa-code"
+                type="text"
+                inputMode="numeric"
+                autoComplete="one-time-code"
+                placeholder="123456"
+                value={mfaCode}
+                onChange={(e) => setMfaCode(e.target.value.replace(/\s/g, ""))}
+                maxLength={8}
+                autoFocus
+                required
+              />
+              <p className="mt-1.5 text-xs text-cinema-muted">
+                Open your authenticator app, or use a recovery code.
+              </p>
+            </div>
 
-        {error && (
-          <p role="alert" className="mt-5 text-xs text-cinema-ember">
-            {error}
-          </p>
+            {error && <p role="alert" className="text-xs text-cinema-ember">{error}</p>}
+
+            <Button
+              type="submit"
+              disabled={loading || mfaCode.length < 6}
+              className="w-full bg-cinema-ember text-cinema-void hover:bg-cinema-ember/90"
+            >
+              {loading ? <Loader2 className="size-4 animate-spin" /> : <KeyRound className="size-4" />}
+              {loading ? "Verifying…" : "Verify"}
+            </Button>
+
+            <button
+              type="button"
+              onClick={() => { setMfaChallenge(null); setError(null); setMfaCode(""); }}
+              className="w-full text-center text-xs text-cinema-muted hover:text-foreground"
+            >
+              ← Back to sign in
+            </button>
+          </form>
+        ) : (
+          <form onSubmit={handleLogin} className="mt-8 space-y-4">
+            <div>
+              <label htmlFor="email" className="mb-1.5 block text-sm font-medium">Email</label>
+              <Input
+                id="email"
+                type="email"
+                autoComplete="email"
+                placeholder="you@example.com"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+
+            <div>
+              <div className="mb-1.5 flex items-center justify-between">
+                <label htmlFor="password" className="text-sm font-medium">Password</label>
+                <Link to="/forgot-password" className="text-xs text-cinema-muted hover:text-foreground">
+                  Forgot password?
+                </Link>
+              </div>
+              <div className="relative">
+                <Input
+                  id="password"
+                  type={showPassword ? "text" : "password"}
+                  autoComplete="current-password"
+                  placeholder="••••••••••"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="pr-10"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((v) => !v)}
+                  className="absolute right-3 top-1/2 -translate-y-1/2 text-cinema-muted hover:text-foreground"
+                  aria-label={showPassword ? "Hide password" : "Show password"}
+                >
+                  {showPassword ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                </button>
+              </div>
+            </div>
+
+            {error && <p role="alert" className="text-xs text-cinema-ember">{error}</p>}
+
+            <Button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-cinema-ember text-cinema-void hover:bg-cinema-ember/90"
+            >
+              {loading ? <Loader2 className="size-4 animate-spin" /> : <LogIn className="size-4" />}
+              {loading ? "Signing in…" : demo ? "Enter demo workspace" : "Sign in"}
+            </Button>
+
+            <p className="text-center text-xs text-cinema-muted">
+              No account?{" "}
+              <Link to="/register" className="text-foreground hover:underline">
+                Create one
+              </Link>
+            </p>
+          </form>
         )}
       </div>
     </main>

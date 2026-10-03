@@ -1,5 +1,6 @@
 import { useMutation } from "@tanstack/react-query";
 import { Loader2, Sparkles, TimerReset } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
 import { useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -19,6 +20,7 @@ type Props = {
  * explicit; on failure the typed instruction and the current plan are kept.
  */
 export function RevisionPrompt({ videoId, planId, disabled, onRevised }: Props) {
+  const posthog = usePostHog();
   const [instruction, setInstruction] = useState("");
 
   const revise = useMutation({
@@ -55,7 +57,12 @@ export function RevisionPrompt({ videoId, planId, disabled, onRevised }: Props) 
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <Button
-          onClick={() => revise.mutate(instruction.trim())}
+          onClick={() => {
+            posthog.capture("revision_requested", {
+              instruction_length: instruction.trim().length,
+            });
+            revise.mutate(instruction.trim());
+          }}
           disabled={disabled || revise.isPending || instruction.trim().length < 3}
         >
           {revise.isPending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}

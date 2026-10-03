@@ -12,6 +12,11 @@ export type SessionPayload = {
   expiresAt: number;
 };
 
+export type MfaChallenge = {
+  mfa_required: true;
+  session_token: string;
+};
+
 function cookieOptions(maxAge: number) {
   return {
     httpOnly: true,
@@ -22,35 +27,102 @@ function cookieOptions(maxAge: number) {
   };
 }
 
-/** Exchanges the authorization code (PKCE) for tokens and stores them in httpOnly cookies. */
-export const exchangeCode = createServerFn({ method: "POST" })
-  .inputValidator((data: { code: string; codeVerifier: string; redirectUri: string }) => data)
-  .handler(async ({ data }): Promise<SessionPayload> => {
-    const { requestToken, userFromToken, tokenExpiry } = await import("./keycloak.server");
-    const tokens = await requestToken({
-      grant_type: "authorization_code",
-      code: data.code,
-      code_verifier: data.codeVerifier,
-      redirect_uri: data.redirectUri,
+function apiUrl() {
+  return (process.env["API_URL"] ?? "http://localhost:8000").replace(/\/$/, "");
+}
+
+async function apiFetch(path: string, init: RequestInit) {
+  const resp = await fetch(`${apiUrl()}${path}`, {
+    ...init,
+    headers: { "content-type": "application/json", ...(init.headers ?? {}) },
+  });
+  if (!resp.ok) {
+    const body = await resp.json().catch(() => ({ detail: "Request failed" }));
+    throw new Error((body as { detail?: string }).detail ?? "Request failed");
+  }
+  return resp.json() as Promise<Record<string, unknown>>;
+}
+
+/** Email + password login. Returns a full session or an MFA challenge. */
+export const loginWithPassword = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: { email: string; password: string; remember_me?: boolean }) => data,
+  )
+  .handler(async ({ data }): Promise<SessionPayload | MfaChallenge> => {
+    const { userFromToken, tokenExpiry } = await import("./keycloak.server");
+    const result = await apiFetch("/api/v1/auth/login", {
+      method: "POST",
+      body: JSON.stringify({ email: data.email, password: data.password, remember_me: data.remember_me ?? false }),
     });
-
-    const user = userFromToken(tokens.access_token);
-    if (!user) throw new Error("The identity provider returned a token we could not read.");
-
-    setCookie(ACCESS_COOKIE, tokens.access_token, cookieOptions(tokens.expires_in));
-    if (tokens.refresh_token) {
-      setCookie(
-        REFRESH_COOKIE,
-        tokens.refresh_token,
-        cookieOptions(tokens.refresh_expires_in ?? 60 * 60 * 24 * 7),
-      );
+    if (result["mfa_required"]) {
+      return { mfa_required: true, session_token: result["session_token"] as string } satisfies MfaChallenge;
     }
-
+    const accessToken = result["access_token"] as string;
+    const refreshToken = result["refresh_token"] as string;
+    const expiresIn = result["expires_in"] as number;
+    const user = userFromToken(accessToken);
+    if (!user) throw new Error("Could not read the token returned by the server.");
+    setCookie(ACCESS_COOKIE, accessToken, cookieOptions(expiresIn));
+    setCookie(REFRESH_COOKIE, refreshToken, cookieOptions(30 * 24 * 60 * 60));
     return {
       user,
-      accessToken: tokens.access_token,
-      expiresAt: tokenExpiry(tokens.access_token) ?? Date.now() + tokens.expires_in * 1000,
+      accessToken,
+      expiresAt: tokenExpiry(accessToken) ?? Date.now() + expiresIn * 1000,
     };
+  });
+
+/** Complete MFA login with a TOTP code or recovery code. */
+export const verifyMfa = createServerFn({ method: "POST" })
+  .inputValidator((data: { session_token: string; code: string }) => data)
+  .handler(async ({ data }): Promise<SessionPayload> => {
+    const { userFromToken, tokenExpiry } = await import("./keycloak.server");
+    const result = await apiFetch("/api/v1/auth/mfa/verify", {
+      method: "POST",
+      body: JSON.stringify(data),
+    });
+    const accessToken = result["access_token"] as string;
+    const refreshToken = result["refresh_token"] as string;
+    const expiresIn = result["expires_in"] as number;
+    const user = userFromToken(accessToken);
+    if (!user) throw new Error("Could not read the MFA token.");
+    setCookie(ACCESS_COOKIE, accessToken, cookieOptions(expiresIn));
+    setCookie(REFRESH_COOKIE, refreshToken, cookieOptions(30 * 24 * 60 * 60));
+    return {
+      user,
+      accessToken,
+      expiresAt: tokenExpiry(accessToken) ?? Date.now() + expiresIn * 1000,
+    };
+  });
+
+/** Register a new account. Returns the email so the UI can show a confirmation. */
+export const registerUser = createServerFn({ method: "POST" })
+  .inputValidator(
+    (data: { email: string; password: string; confirm_password: string; full_name?: string; invitation_token?: string }) => data,
+  )
+  .handler(async ({ data }): Promise<{ email: string }> => {
+    await apiFetch("/api/v1/auth/register", { method: "POST", body: JSON.stringify(data) });
+    return { email: data.email };
+  });
+
+/** Verify email address via token from the verification link. */
+export const verifyEmailToken = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string }) => data)
+  .handler(async ({ data }): Promise<void> => {
+    await apiFetch("/api/v1/auth/verify-email", { method: "POST", body: JSON.stringify(data) });
+  });
+
+/** Request a password reset email. Always succeeds server-side. */
+export const requestPasswordReset = createServerFn({ method: "POST" })
+  .inputValidator((data: { email: string }) => data)
+  .handler(async ({ data }): Promise<void> => {
+    await apiFetch("/api/v1/auth/forgot-password", { method: "POST", body: JSON.stringify(data) }).catch(() => undefined);
+  });
+
+/** Reset password with the token from the reset email. */
+export const resetPassword = createServerFn({ method: "POST" })
+  .inputValidator((data: { token: string; password: string; confirm_password: string }) => data)
+  .handler(async ({ data }): Promise<void> => {
+    await apiFetch("/api/v1/auth/reset-password", { method: "POST", body: JSON.stringify(data) });
   });
 
 /** Reads the current session from the httpOnly access-token cookie. */
@@ -69,30 +141,25 @@ export const getSession = createServerFn({ method: "GET" }).handler(
 /** Silent refresh using the httpOnly refresh-token cookie. */
 export const refreshSession = createServerFn({ method: "POST" }).handler(
   async (): Promise<SessionPayload | null> => {
-    const { requestToken, userFromToken, tokenExpiry } = await import("./keycloak.server");
+    const { userFromToken, tokenExpiry } = await import("./keycloak.server");
     const refreshToken = getCookie(REFRESH_COOKIE);
     if (!refreshToken) return null;
-
     try {
-      const tokens = await requestToken({
-        grant_type: "refresh_token",
-        refresh_token: refreshToken,
+      const result = await apiFetch("/api/v1/auth/refresh", {
+        method: "POST",
+        body: JSON.stringify({ refresh_token: refreshToken }),
       });
-      const user = userFromToken(tokens.access_token);
+      const accessToken = result["access_token"] as string;
+      const newRefreshToken = result["refresh_token"] as string;
+      const expiresIn = result["expires_in"] as number;
+      const user = userFromToken(accessToken);
       if (!user) return null;
-
-      setCookie(ACCESS_COOKIE, tokens.access_token, cookieOptions(tokens.expires_in));
-      if (tokens.refresh_token) {
-        setCookie(
-          REFRESH_COOKIE,
-          tokens.refresh_token,
-          cookieOptions(tokens.refresh_expires_in ?? 60 * 60 * 24 * 7),
-        );
-      }
+      setCookie(ACCESS_COOKIE, accessToken, cookieOptions(expiresIn));
+      setCookie(REFRESH_COOKIE, newRefreshToken, cookieOptions(30 * 24 * 60 * 60));
       return {
         user,
-        accessToken: tokens.access_token,
-        expiresAt: tokenExpiry(tokens.access_token) ?? Date.now() + tokens.expires_in * 1000,
+        accessToken,
+        expiresAt: tokenExpiry(accessToken) ?? Date.now() + expiresIn * 1000,
       };
     } catch {
       deleteCookie(ACCESS_COOKIE, { path: "/" });
@@ -102,34 +169,17 @@ export const refreshSession = createServerFn({ method: "POST" }).handler(
   },
 );
 
-/** Clears the session cookies and returns the Keycloak end-session URL to visit. */
-export const endSession = createServerFn({ method: "POST" })
-  .inputValidator((data: { postLogoutRedirectUri: string }) => data)
-  .handler(async ({ data }): Promise<{ logoutUrl: string | null }> => {
-    const { endSessionEndpoint, isServerKeycloakConfigured, serverKeycloakConfig } =
-      await import("./keycloak.server");
-    const refreshToken = getCookie(REFRESH_COOKIE);
-
-    const config = serverKeycloakConfig();
-    if (refreshToken && isServerKeycloakConfigured(config)) {
-      const params = new URLSearchParams({
-        client_id: config.clientId,
-        refresh_token: refreshToken,
-      });
-      if (config.clientSecret) params.set("client_secret", config.clientSecret);
-      await fetch(endSessionEndpoint(config), {
+/** Clears session cookies and notifies the backend to revoke the session. */
+export const endSession = createServerFn({ method: "POST" }).handler(
+  async (): Promise<void> => {
+    const token = getCookie(ACCESS_COOKIE);
+    if (token) {
+      await fetch(`${apiUrl()}/api/v1/auth/logout`, {
         method: "POST",
-        headers: { "content-type": "application/x-www-form-urlencoded" },
-        body: params.toString(),
+        headers: { Authorization: `Bearer ${token}` },
       }).catch(() => undefined);
     }
-
     deleteCookie(ACCESS_COOKIE, { path: "/" });
     deleteCookie(REFRESH_COOKIE, { path: "/" });
-
-    if (!isServerKeycloakConfigured(config)) return { logoutUrl: null };
-    const url = new URL(endSessionEndpoint(config));
-    url.searchParams.set("client_id", config.clientId);
-    url.searchParams.set("post_logout_redirect_uri", data.postLogoutRedirectUri);
-    return { logoutUrl: url.toString() };
-  });
+  },
+);

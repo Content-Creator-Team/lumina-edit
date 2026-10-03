@@ -3,7 +3,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { api, toArray } from "./api-client";
 import type { EditPlan, Scene, Transcript, Video } from "./api-types";
 
-export const TERMINAL_STATUSES = new Set(["complete", "failed"]);
+export const TERMINAL_STATUSES = new Set(["complete", "failed", "ready", "plan_ready"]);
 export const POLL_INTERVAL = 5_000;
 
 export const videosQuery = () =>

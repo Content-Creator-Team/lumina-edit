@@ -1,4 +1,5 @@
 import { useNavigate, useRouter } from "@tanstack/react-router";
+import { usePostHog } from "posthog-js/react";
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from "react";
 
 import { endSession, getSession, refreshSession, type SessionPayload } from "./auth.functions";
@@ -40,14 +41,31 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [session, setSession] = useState<SessionPayload | null>(null);
   const [status, setStatus] = useState<AuthContextValue["status"]>("loading");
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const identifiedUserRef = useRef<string | null>(null);
   const navigate = useNavigate();
   const router = useRouter();
+  const posthog = usePostHog();
 
   const applySession = useCallback((next: SessionPayload | null) => {
+    const user = next?.user;
+    if (!user && identifiedUserRef.current) {
+      posthog.reset();
+      identifiedUserRef.current = null;
+    } else if (user && identifiedUserRef.current !== user.sub) {
+      if (identifiedUserRef.current) posthog.reset();
+      posthog.identify(user.sub, {
+        email: user.email ?? undefined,
+        name: user.name ?? undefined,
+        organization: user.org ?? undefined,
+        roles: user.roles,
+      });
+      identifiedUserRef.current = user.sub;
+    }
+
     setSession(next);
     setAccessToken(next?.accessToken ?? null, next?.expiresAt ?? 0);
     setStatus(next ? "authenticated" : "unauthenticated");
-  }, []);
+  }, [posthog]);
 
   const doRefresh = useCallback(async () => {
     const next = await refreshSession().catch(() => null);
@@ -59,7 +77,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   useEffect(() => {
     let cancelled = false;
     if (isDemoMode()) {
-      // No Keycloak redirect, no cookies: the demo session is local only.
+      // Demo session is local-only (no cookies).
       const active = sessionStorage.getItem(DEMO_SESSION_KEY) === "active";
       applySession(active ? demoSession() : null);
       return;
@@ -106,6 +124,9 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, [doRefresh, applySession, navigate]);
 
   const logout = useCallback(async () => {
+    posthog.capture("user_logged_out");
+    posthog.reset();
+    identifiedUserRef.current = null;
     if (isDemoMode()) {
       sessionStorage.removeItem(DEMO_SESSION_KEY);
       applySession(null);
@@ -113,14 +134,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       navigate({ to: "/", replace: true });
       return;
     }
-    const result = await endSession({
-      data: { postLogoutRedirectUri: `${window.location.origin}/` },
-    }).catch(() => ({ logoutUrl: null }));
+    await endSession().catch(() => undefined);
     applySession(null);
     router.invalidate();
-    if (result.logoutUrl) window.location.assign(result.logoutUrl);
-    else navigate({ to: "/", replace: true });
-  }, [applySession, navigate, router]);
+    navigate({ to: "/login", replace: true });
+  }, [applySession, navigate, posthog, router]);
 
   const value = useMemo<AuthContextValue>(
     () => ({

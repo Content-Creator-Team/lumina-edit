@@ -1,6 +1,7 @@
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { Download, Loader2 } from "lucide-react";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Clapperboard, Download, Loader2 } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
 import { useEffect, useState } from "react";
 
 import { ErrorState, LoadingState } from "@/components/app/query-states";
@@ -39,17 +40,38 @@ function useElapsed(active: boolean) {
 
 function RenderPage() {
   const { id } = Route.useParams();
-  const { job } = Route.useSearch();
+  const { job: jobFromSearch } = Route.useSearch();
+  const navigate = useNavigate();
+  const posthog = usePostHog();
 
   const planQuery = useQuery(editPlanQuery(id));
+  const jobsListQ = useQuery({
+    queryKey: ["render-jobs", id],
+    queryFn: () => api.listRenderJobs(id),
+    enabled: !jobFromSearch,
+  });
+
+  const resolvedJobId = jobFromSearch ?? jobsListQ.data?.[0]?.id ?? undefined;
+
+  useEffect(() => {
+    if (!jobFromSearch && jobsListQ.data?.[0]?.id) {
+      void navigate({
+        to: "/videos/$id/render",
+        params: { id },
+        search: { job: jobsListQ.data[0].id },
+        replace: true,
+      });
+    }
+  }, [jobFromSearch, jobsListQ.data, id, navigate]);
+
   const jobQuery = useQuery({
-    ...renderJobQuery(job ?? ""),
-    enabled: Boolean(job),
+    ...renderJobQuery(resolvedJobId ?? ""),
+    enabled: Boolean(resolvedJobId),
     refetchInterval: (q) => (q.state.data && isTerminal(q.state.data.status) ? false : 4000),
   });
 
   const status = String(jobQuery.data?.status ?? "").toLowerCase();
-  const elapsed = useElapsed(Boolean(job) && !isTerminal(status));
+  const elapsed = useElapsed(Boolean(resolvedJobId) && !isTerminal(status));
 
   const retry = useMutation({
     mutationFn: async () => {
@@ -58,7 +80,13 @@ function RenderPage() {
     },
     onSuccess: (result) => {
       const nextJob = result.render_job_id ?? result.job_id ?? result.id;
-      if (nextJob) window.location.assign(`/videos/${id}/render?job=${nextJob}`);
+      if (nextJob) {
+        void navigate({
+          to: "/videos/$id/render",
+          params: { id },
+          search: { job: nextJob },
+        });
+      }
     },
   });
 
@@ -71,13 +99,24 @@ function RenderPage() {
       >
         ← Back to video
       </Link>
-      <h1 className="mt-4 font-[family-name:var(--font-display)] text-3xl">Render</h1>
+      <div className="mt-4 flex flex-wrap items-center justify-between gap-3">
+        <h1 className="font-[family-name:var(--font-display)] text-3xl">Render</h1>
+        <Button asChild variant="outline" size="sm">
+          <Link to="/editor/$videoId" params={{ videoId: id }}>
+            <Clapperboard className="mr-1.5 size-3.5" />
+            Editor
+          </Link>
+        </Button>
+      </div>
 
-      {!job ? (
-        <p className="mt-6 rounded-md border border-border p-4 text-sm text-muted-foreground">
-          No render job is referenced in this link. Approve a plan on the review screen to start a
-          render, then return here.
-        </p>
+      {!resolvedJobId && (jobsListQ.isPending || !jobFromSearch) ? (
+        jobsListQ.isPending ? (
+          <LoadingState label="Looking up render jobs…" />
+        ) : (
+          <p className="mt-6 rounded-md border border-border p-4 text-sm text-muted-foreground">
+            No render jobs yet. Export from the editor or approve a plan on the review screen.
+          </p>
+        )
       ) : jobQuery.isPending ? (
         <LoadingState label="Loading render job…" />
       ) : jobQuery.isError ? (
@@ -86,6 +125,9 @@ function RenderPage() {
         <div className="mt-6 space-y-6">
           <div className="flex items-center gap-3">
             <StatusBadge status={status} />
+            {jobQuery.data.preset_id && (
+              <span className="text-xs text-muted-foreground">Preset: {jobQuery.data.preset_id}</span>
+            )}
             {!isTerminal(status) && (
               <span role="status" className="text-sm text-muted-foreground">
                 Elapsed {Math.floor(elapsed / 60)}m {elapsed % 60}s
@@ -118,7 +160,11 @@ function RenderPage() {
                 className="w-full rounded-lg border border-border bg-black"
               />
               <Button asChild>
-                <a href={jobQuery.data.output_url} download>
+                <a
+                  href={jobQuery.data.output_url}
+                  download
+                  onClick={() => posthog.capture("render_downloaded")}
+                >
                   <Download className="size-4" aria-hidden="true" />
                   Download the final cut
                 </a>
@@ -129,11 +175,14 @@ function RenderPage() {
           {status === "failed" && (
             <div role="alert" className="rounded-md border border-destructive/40 p-4">
               <p className="text-sm text-foreground">
-                {jobQuery.data.error ?? "The render failed before it finished."}
+                {jobQuery.data.error_message ?? jobQuery.data.error ?? "The render failed before it finished."}
               </p>
               <Button
                 className="mt-4"
-                onClick={() => retry.mutate()}
+                onClick={() => {
+                  posthog.capture("render_retry_requested");
+                  retry.mutate();
+                }}
                 disabled={retry.isPending || !planQuery.data}
               >
                 {retry.isPending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}

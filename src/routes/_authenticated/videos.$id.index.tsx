@@ -1,6 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Check, CircleDashed, Loader2 } from "lucide-react";
+import { Check, Clapperboard, CircleDashed, Loader2 } from "lucide-react";
 
 import { ErrorState, LoadingState } from "@/components/app/query-states";
 import { StatusBadge } from "@/components/app/status-badge";
@@ -33,7 +33,7 @@ const PIPELINE = [
   { key: "plan_generation", label: "Plan generation", blurb: "Drafting the edit plan." },
 ] as const;
 
-const ORDERED_STATUSES = ["uploading", "processing", "plan_ready", "approved", "rendering", "complete"];
+const ORDERED_STATUSES = ["uploading", "processing", "ready", "plan_ready", "approved", "rendering", "complete"];
 
 function stageState(stageIndex: number, video: { status: string; stages?: Record<string, string> | null }, key: string) {
   const explicit = video.stages?.[key];
@@ -42,7 +42,7 @@ function stageState(stageIndex: number, video: { status: string; stages?: Record
   const status = String(video.status).toLowerCase();
   if (status === "failed") return "unknown";
   const statusIndex = ORDERED_STATUSES.indexOf(status);
-  if (statusIndex >= ORDERED_STATUSES.indexOf("plan_ready")) return "complete";
+  if (statusIndex >= ORDERED_STATUSES.indexOf("ready")) return "complete";
   if (status === "processing") return stageIndex === 0 ? "running" : "pending";
   return "pending";
 }
@@ -59,7 +59,7 @@ function VideoDetailPage() {
 
   const video = query.data;
   const status = String(video.status).toLowerCase();
-  const planReady = ["plan_ready", "approved", "rendering", "complete"].includes(status);
+  const planReady = ["ready", "plan_ready", "approved", "rendering", "complete"].includes(status);
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -131,7 +131,22 @@ function VideoDetailPage() {
             {planReady ? "Review edit plan" : "Plan not ready yet"}
           </Link>
         </Button>
-        {["rendering", "complete"].includes(status) && (
+        {planReady && (
+          <Button asChild variant="secondary">
+            <Link to="/editor/$videoId" params={{ videoId: id }}>
+              <Clapperboard className="mr-1.5 size-4" />
+              Open in Editor
+            </Link>
+          </Button>
+        )}
+        {planReady && (
+          <Button asChild variant="outline">
+            <Link to="/videos/$id/thumbnails" params={{ id }}>
+              Thumbnails
+            </Link>
+          </Button>
+        )}
+        {["rendering", "complete", "ready", "plan_ready", "approved"].includes(status) && (
           <Button asChild variant="outline">
             <Link to="/videos/$id/render" params={{ id }}>
               View render

@@ -12,4 +12,10 @@ export default defineConfig({
     // nitro/vite builds from this
     server: { entry: "server" },
   },
+  vite: {
+    resolve: {
+      // Native Vite 8 path resolution (Lovable still loads vite-tsconfig-paths — warning is harmless)
+      tsconfigPaths: true,
+    },
+  },
 });

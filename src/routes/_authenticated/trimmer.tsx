@@ -14,6 +14,7 @@ import {
   ZoomIn,
   ZoomOut,
 } from "lucide-react";
+import { usePostHog } from "posthog-js/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { Button } from "@/components/ui/button";
@@ -89,6 +90,7 @@ function clamp(value: number, min: number, max: number) {
 }
 
 function TrimmerPage() {
+  const posthog = usePostHog();
   const inputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
   const timelineRef = useRef<HTMLDivElement>(null);
@@ -327,6 +329,10 @@ function TrimmerPage() {
   }
 
   function exportCutList() {
+    posthog.capture("trim_cut_list_exported", {
+      segment_count: segments.length,
+      source: file ? "local" : "demo",
+    });
     const payload = {
       name: file?.name ?? "cutroom-demo-reel",
       totalDuration: duration,

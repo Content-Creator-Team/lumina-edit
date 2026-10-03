@@ -1,21 +1,11 @@
 /**
  * Runtime mode detection.
  *
- * The app has two modes and picks one automatically:
- *
- *  - LIVE  — real FastAPI + Keycloak. Selected as soon as `VITE_API_URL`
- *            and the `VITE_KEYCLOAK_*` values are present (or when
+ *  - LIVE  — real FastAPI. Selected when `VITE_API_URL` is set (or when
  *            `VITE_DEMO_MODE=false` is set explicitly).
- *  - DEMO  — a self-contained local workspace with fixture data, used so the
- *            preview is usable with no environment configuration at all.
- *            Selected when the live configuration is absent, or forced with
- *            `VITE_DEMO_MODE=true`.
- *
- * Demo mode never calls the network: no Keycloak redirect, no FastAPI
- * requests, and no invented production endpoints.
+ *  - DEMO  — local fixture workspace when live config is absent, or forced
+ *            with `VITE_DEMO_MODE=true`.
  */
-import { isKeycloakConfigured } from "./keycloak-config";
-
 const RAW_FLAG = (import.meta.env["VITE_DEMO_MODE"] as string | undefined)?.trim().toLowerCase();
 
 export const API_BASE_URL = ((import.meta.env["VITE_API_URL"] as string | undefined) ?? "").replace(
@@ -24,7 +14,7 @@ export const API_BASE_URL = ((import.meta.env["VITE_API_URL"] as string | undefi
 );
 
 export function isLiveConfigured() {
-  return Boolean(API_BASE_URL) && isKeycloakConfigured();
+  return Boolean(API_BASE_URL);
 }
 
 export function isDemoMode() {
