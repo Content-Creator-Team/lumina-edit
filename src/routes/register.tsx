@@ -53,8 +53,8 @@ function RegisterPage() {
           email,
           password,
           confirm_password: confirmPassword,
-          full_name: fullName || undefined,
-          invitation_token: invite || undefined,
+          ...(fullName ? { full_name: fullName } : {}),
+          ...(invite ? { invitation_token: invite } : {}),
         },
       });
       posthog.capture("account_registered", { invited: Boolean(invite) });

@@ -232,7 +232,7 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
       const track: Track = {
         id: uid(),
         type,
-        name: name ?? `${type[0].toUpperCase()}${type.slice(1)} ${count}`,
+        name: name ?? `${type.charAt(0).toUpperCase()}${type.slice(1)} ${count}`,
         muted: false,
         locked: false,
         visible: true,

@@ -39,15 +39,15 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: import("@tanstack/react-router").ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
 
     if (
-      import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN &&
-      import.meta.env.VITE_PUBLIC_POSTHOG_HOST
+      import.meta.env["VITE_PUBLIC_POSTHOG_PROJECT_TOKEN"] &&
+      import.meta.env["VITE_PUBLIC_POSTHOG_HOST"]
     ) {
       posthog.captureException(error);
     }
@@ -142,8 +142,8 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const posthogApiKey = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
-  const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
+  const posthogApiKey = import.meta.env["VITE_PUBLIC_POSTHOG_PROJECT_TOKEN"];
+  const posthogHost = import.meta.env["VITE_PUBLIC_POSTHOG_HOST"];
 
   if (import.meta.env.DEV && (!posthogApiKey || !posthogHost)) {
     console.warn("PostHog is not configured; analytics events are disabled.");
