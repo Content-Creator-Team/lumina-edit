@@ -191,7 +191,7 @@ function LocalizationPanel({ videoId }: { videoId: string }) {
       api.dubVideo(videoId, lang, {
         voice_clone: false,
         voice_clone_consent: consent,
-        translate_job_id: translateMut.data?.job_id,
+        ...(translateMut.data?.job_id ? { translate_job_id: translateMut.data.job_id } : {}),
       }),
   });
 
