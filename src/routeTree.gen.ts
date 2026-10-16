@@ -27,6 +27,7 @@ import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedTrimmerRouteImport } from './routes/_authenticated/trimmer'
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
+import { Route as AuthenticatedVideosIdRouteImport } from './routes/_authenticated/videos.$id'
 import { Route as EditorEditorVideoIdRouteImport } from './routes/_editor.editor.$videoId'
 import { Route as AuthenticatedVideosIdIndexRouteImport } from './routes/_authenticated/videos.$id.index'
 import { Route as AuthenticatedVideosIdPlanRouteImport } from './routes/_authenticated/videos.$id.plan'
@@ -123,6 +124,11 @@ const AuthCallbackRoute = AuthCallbackRouteImport.update({
   path: '/auth/callback',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedVideosIdRoute = AuthenticatedVideosIdRouteImport.update({
+  id: '/videos/$id',
+  path: '/videos/$id',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const EditorEditorVideoIdRoute = EditorEditorVideoIdRouteImport.update({
   id: '/editor/$videoId',
   path: '/editor/$videoId',
@@ -130,39 +136,39 @@ const EditorEditorVideoIdRoute = EditorEditorVideoIdRouteImport.update({
 } as any)
 const AuthenticatedVideosIdIndexRoute =
   AuthenticatedVideosIdIndexRouteImport.update({
-    id: '/videos/$id/',
-    path: '/videos/$id/',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/',
+    path: '/',
+    getParentRoute: () => AuthenticatedVideosIdRoute,
   } as any)
 const AuthenticatedVideosIdPlanRoute =
   AuthenticatedVideosIdPlanRouteImport.update({
-    id: '/videos/$id/plan',
-    path: '/videos/$id/plan',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/plan',
+    path: '/plan',
+    getParentRoute: () => AuthenticatedVideosIdRoute,
   } as any)
 const AuthenticatedVideosIdRenderRoute =
   AuthenticatedVideosIdRenderRouteImport.update({
-    id: '/videos/$id/render',
-    path: '/videos/$id/render',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/render',
+    path: '/render',
+    getParentRoute: () => AuthenticatedVideosIdRoute,
   } as any)
 const AuthenticatedVideosIdReviewRoute =
   AuthenticatedVideosIdReviewRouteImport.update({
-    id: '/videos/$id/review',
-    path: '/videos/$id/review',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/review',
+    path: '/review',
+    getParentRoute: () => AuthenticatedVideosIdRoute,
   } as any)
 const AuthenticatedVideosIdThumbnailsRoute =
   AuthenticatedVideosIdThumbnailsRouteImport.update({
-    id: '/videos/$id/thumbnails',
-    path: '/videos/$id/thumbnails',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/thumbnails',
+    path: '/thumbnails',
+    getParentRoute: () => AuthenticatedVideosIdRoute,
   } as any)
 const AuthenticatedVideosIdVersionsRoute =
   AuthenticatedVideosIdVersionsRouteImport.update({
-    id: '/videos/$id/versions',
-    path: '/videos/$id/versions',
-    getParentRoute: () => AuthenticatedRoute,
+    id: '/versions',
+    path: '/versions',
+    getParentRoute: () => AuthenticatedVideosIdRoute,
   } as any)
 
 export interface FileRoutesByFullPath {
@@ -182,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/trimmer': typeof AuthenticatedTrimmerRoute
   '/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/videos/$id': typeof AuthenticatedVideosIdRouteWithChildren
   '/editor/$videoId': typeof EditorEditorVideoIdRoute
   '/videos/$id/plan': typeof AuthenticatedVideosIdPlanRoute
   '/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
@@ -235,6 +242,7 @@ export interface FileRoutesById {
   '/_authenticated/trimmer': typeof AuthenticatedTrimmerRoute
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
+  '/_authenticated/videos/$id': typeof AuthenticatedVideosIdRouteWithChildren
   '/_editor/editor/$videoId': typeof EditorEditorVideoIdRoute
   '/_authenticated/videos/$id/plan': typeof AuthenticatedVideosIdPlanRoute
   '/_authenticated/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
@@ -262,6 +270,7 @@ export interface FileRouteTypes {
     | '/trimmer'
     | '/upload'
     | '/auth/callback'
+    | '/videos/$id'
     | '/editor/$videoId'
     | '/videos/$id/plan'
     | '/videos/$id/render'
@@ -314,6 +323,7 @@ export interface FileRouteTypes {
     | '/_authenticated/trimmer'
     | '/_authenticated/upload'
     | '/auth/callback'
+    | '/_authenticated/videos/$id'
     | '/_editor/editor/$videoId'
     | '/_authenticated/videos/$id/plan'
     | '/_authenticated/videos/$id/render'
@@ -466,6 +476,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthCallbackRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/videos/$id': {
+      id: '/_authenticated/videos/$id'
+      path: '/videos/$id'
+      fullPath: '/videos/$id'
+      preLoaderRoute: typeof AuthenticatedVideosIdRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_editor/editor/$videoId': {
       id: '/_editor/editor/$videoId'
       path: '/editor/$videoId'
@@ -475,48 +492,71 @@ declare module '@tanstack/react-router' {
     }
     '/_authenticated/videos/$id/': {
       id: '/_authenticated/videos/$id/'
-      path: '/videos/$id'
+      path: '/'
       fullPath: '/videos/$id/'
       preLoaderRoute: typeof AuthenticatedVideosIdIndexRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedVideosIdRoute
     }
     '/_authenticated/videos/$id/plan': {
       id: '/_authenticated/videos/$id/plan'
-      path: '/videos/$id/plan'
+      path: '/plan'
       fullPath: '/videos/$id/plan'
       preLoaderRoute: typeof AuthenticatedVideosIdPlanRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedVideosIdRoute
     }
     '/_authenticated/videos/$id/render': {
       id: '/_authenticated/videos/$id/render'
-      path: '/videos/$id/render'
+      path: '/render'
       fullPath: '/videos/$id/render'
       preLoaderRoute: typeof AuthenticatedVideosIdRenderRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedVideosIdRoute
     }
     '/_authenticated/videos/$id/review': {
       id: '/_authenticated/videos/$id/review'
-      path: '/videos/$id/review'
+      path: '/review'
       fullPath: '/videos/$id/review'
       preLoaderRoute: typeof AuthenticatedVideosIdReviewRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedVideosIdRoute
     }
     '/_authenticated/videos/$id/thumbnails': {
       id: '/_authenticated/videos/$id/thumbnails'
-      path: '/videos/$id/thumbnails'
+      path: '/thumbnails'
       fullPath: '/videos/$id/thumbnails'
       preLoaderRoute: typeof AuthenticatedVideosIdThumbnailsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedVideosIdRoute
     }
     '/_authenticated/videos/$id/versions': {
       id: '/_authenticated/videos/$id/versions'
-      path: '/videos/$id/versions'
+      path: '/versions'
       fullPath: '/videos/$id/versions'
       preLoaderRoute: typeof AuthenticatedVideosIdVersionsRouteImport
-      parentRoute: typeof AuthenticatedRoute
+      parentRoute: typeof AuthenticatedVideosIdRoute
     }
   }
 }
+
+interface AuthenticatedVideosIdRouteChildren {
+  AuthenticatedVideosIdPlanRoute: typeof AuthenticatedVideosIdPlanRoute
+  AuthenticatedVideosIdRenderRoute: typeof AuthenticatedVideosIdRenderRoute
+  AuthenticatedVideosIdReviewRoute: typeof AuthenticatedVideosIdReviewRoute
+  AuthenticatedVideosIdThumbnailsRoute: typeof AuthenticatedVideosIdThumbnailsRoute
+  AuthenticatedVideosIdVersionsRoute: typeof AuthenticatedVideosIdVersionsRoute
+  AuthenticatedVideosIdIndexRoute: typeof AuthenticatedVideosIdIndexRoute
+}
+
+const AuthenticatedVideosIdRouteChildren: AuthenticatedVideosIdRouteChildren = {
+  AuthenticatedVideosIdPlanRoute: AuthenticatedVideosIdPlanRoute,
+  AuthenticatedVideosIdRenderRoute: AuthenticatedVideosIdRenderRoute,
+  AuthenticatedVideosIdReviewRoute: AuthenticatedVideosIdReviewRoute,
+  AuthenticatedVideosIdThumbnailsRoute: AuthenticatedVideosIdThumbnailsRoute,
+  AuthenticatedVideosIdVersionsRoute: AuthenticatedVideosIdVersionsRoute,
+  AuthenticatedVideosIdIndexRoute: AuthenticatedVideosIdIndexRoute,
+}
+
+const AuthenticatedVideosIdRouteWithChildren =
+  AuthenticatedVideosIdRoute._addFileChildren(
+    AuthenticatedVideosIdRouteChildren,
+  )
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
@@ -525,12 +565,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTrimmerRoute: typeof AuthenticatedTrimmerRoute
   AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
-  AuthenticatedVideosIdPlanRoute: typeof AuthenticatedVideosIdPlanRoute
-  AuthenticatedVideosIdRenderRoute: typeof AuthenticatedVideosIdRenderRoute
-  AuthenticatedVideosIdReviewRoute: typeof AuthenticatedVideosIdReviewRoute
-  AuthenticatedVideosIdThumbnailsRoute: typeof AuthenticatedVideosIdThumbnailsRoute
-  AuthenticatedVideosIdVersionsRoute: typeof AuthenticatedVideosIdVersionsRoute
-  AuthenticatedVideosIdIndexRoute: typeof AuthenticatedVideosIdIndexRoute
+  AuthenticatedVideosIdRoute: typeof AuthenticatedVideosIdRouteWithChildren
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
@@ -540,12 +575,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTrimmerRoute: AuthenticatedTrimmerRoute,
   AuthenticatedUploadRoute: AuthenticatedUploadRoute,
-  AuthenticatedVideosIdPlanRoute: AuthenticatedVideosIdPlanRoute,
-  AuthenticatedVideosIdRenderRoute: AuthenticatedVideosIdRenderRoute,
-  AuthenticatedVideosIdReviewRoute: AuthenticatedVideosIdReviewRoute,
-  AuthenticatedVideosIdThumbnailsRoute: AuthenticatedVideosIdThumbnailsRoute,
-  AuthenticatedVideosIdVersionsRoute: AuthenticatedVideosIdVersionsRoute,
-  AuthenticatedVideosIdIndexRoute: AuthenticatedVideosIdIndexRoute,
+  AuthenticatedVideosIdRoute: AuthenticatedVideosIdRouteWithChildren,
 }
 
 const AuthenticatedRouteWithChildren = AuthenticatedRoute._addFileChildren(
