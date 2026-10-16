@@ -5,7 +5,7 @@ export function SiteFooter() {
     <footer className="border-t border-cinema-line">
       <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-12 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <p className="font-[family-name:var(--font-display)] text-lg text-cinema-ink">Cutroom</p>
+          <p className="font-[family-name:var(--font-display)] text-lg text-cinema-ink">REELZOY</p>
           <p className="mt-1 text-sm text-cinema-muted">
             AI-assisted video editing for teams who still care about the cut.
           </p>

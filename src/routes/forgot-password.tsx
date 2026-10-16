@@ -10,7 +10,7 @@ import { requestPasswordReset } from "@/lib/auth.functions";
 export const Route = createFileRoute("/forgot-password")({
   head: () => ({
     meta: [
-      { title: "Forgot password — Cutroom" },
+      { title: "Forgot password — REELZOY" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -53,7 +53,7 @@ function ForgotPasswordPage() {
             className="mx-auto flex size-12 items-center justify-center rounded-xl"
             style={{ background: "linear-gradient(140deg, var(--primary), var(--primary-deep))" }}
           />
-          <h1 className="mt-8 font-[family-name:var(--font-display)] text-3xl">Cutroom</h1>
+          <h1 className="mt-8 font-[family-name:var(--font-display)] text-3xl">REELZOY</h1>
           <p className="mt-2 text-sm text-cinema-muted">
             {sent ? "Email sent." : "Reset your password."}
           </p>

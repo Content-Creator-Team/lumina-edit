@@ -23,7 +23,7 @@ export function SiteHeader() {
             }}
           />
           <span className="font-[family-name:var(--font-display)] text-lg tracking-wide text-cinema-ink">
-            Cutroom
+            REELZOY
           </span>
         </Link>
 

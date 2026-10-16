@@ -12,9 +12,9 @@ import type { EditPlan } from "@/lib/api-types";
 export const Route = createFileRoute("/_authenticated/videos/$id/versions")({
   head: () => ({
     meta: [
-      { title: "Plan versions — Cutroom" },
+      { title: "Plan versions — REELZOY" },
       { name: "description", content: "Read-only history of every AI edit plan for this video." },
-      { property: "og:title", content: "Plan versions — Cutroom" },
+      { property: "og:title", content: "Plan versions — REELZOY" },
       {
         property: "og:description",
         content: "Read-only history of every AI edit plan for this video.",
@@ -70,7 +70,7 @@ function VersionsPage() {
           <EmptyState
             icon={<History className="size-6 text-muted-foreground" aria-hidden="true" />}
             title="No plan versions yet"
-            description="Once Cutroom finishes analysing this video, the first edit plan will appear here."
+            description="Once REELZOY finishes analysing this video, the first edit plan will appear here."
           />
         </div>
       ) : (

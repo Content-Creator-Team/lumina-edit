@@ -9,7 +9,7 @@ import { SiteHeader } from "@/components/landing/site-header";
 import { TimelineShowcase } from "@/components/landing/timeline-showcase";
 import { Button } from "@/components/ui/button";
 
-const TITLE = "Cutroom — AI video editing you can actually direct";
+const TITLE = "REELZOY — AI video editing you can actually direct";
 const DESCRIPTION =
   "Upload footage, watch scene detection, transcription and vision tagging build an edit plan, then review every keep and cut before you render.";
 
@@ -81,7 +81,7 @@ function Landing() {
             </Reveal>
             <Reveal delay={240}>
               <p className="mt-8 max-w-xl text-lg leading-relaxed text-cinema-muted">
-                Cutroom watches your footage end to end — scenes, speech, faces, motion — and hands
+                REELZOY watches your footage end to end — scenes, speech, faces, motion — and hands
                 back an edit plan you can interrogate frame by frame before a single pixel renders.
               </p>
             </Reveal>

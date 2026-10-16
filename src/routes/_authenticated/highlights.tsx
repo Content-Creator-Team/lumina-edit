@@ -17,12 +17,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/highlights")({
   head: () => ({
     meta: [
-      { title: "AI highlights — Cutroom" },
+      { title: "AI highlights — REELZOY" },
       {
         name: "description",
         content: "Drop in footage and let AI suggest editable highlight clips with timecodes.",
       },
-      { property: "og:title", content: "AI highlights — Cutroom" },
+      { property: "og:title", content: "AI highlights — REELZOY" },
       {
         property: "og:description",
         content: "Drop in footage and let AI suggest editable highlight clips with timecodes.",
