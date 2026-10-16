@@ -35,6 +35,12 @@ export function PreviewCanvas({ className, playbackUrl }: { className?: string; 
     if (!compare || !v || sourceTime === null) return;
     if (Math.abs(v.currentTime - sourceTime) > 0.35) v.currentTime = sourceTime;
   }, [compare, sourceTime]);
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!compare || !v) return;
+    if (playing) void v.play().catch(() => undefined);
+    else v.pause();
+  }, [compare, playing]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
   const lastRef = useRef<number | null>(null);
