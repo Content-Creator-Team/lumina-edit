@@ -208,7 +208,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
         saveError={saveMut.isError ? String(saveMut.error) : null}
       />
       <div className="relative mx-2 flex min-h-0 flex-1 gap-2 overflow-hidden">
-        <div className="editor-stage flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-foreground/90 dark:bg-background/80">
+        <div className="editor-stage flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-black/80">
           {planQ.isLoading ? (
             <div className="flex flex-1 items-center justify-center gap-2">
               <Loader2 className="size-4 animate-spin text-muted-foreground" />
