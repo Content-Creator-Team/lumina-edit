@@ -7,10 +7,12 @@
 - [x] Editor power tools (Ctrl+K, J/K/L, I/O, X, S, ? sheet, before/after, single tabbed side panel)
 
 ## Batch 2 (next)
-- [ ] Edit via transcript
+- [x] Edit via transcript
 - [ ] Live processing screen
-- [ ] Multiple versions side by side with hook score
-- [ ] Brand kit + timestamped comments + client approval link
+- [x] Multiple versions side by side with hook score
+- [x] Brand kit (fonts, colours, logo → captions + thumbnails)
+- [ ] Timestamped comments + client approval link
+- [ ] Fixes from review notes: undo/decision sync, save decisions, direct /prompt to Copilot, synced before/after video, calmer tilt on work screens
 
 ## Open
 - Real pricing figures (waiting on user)
