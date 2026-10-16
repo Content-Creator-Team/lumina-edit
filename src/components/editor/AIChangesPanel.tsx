@@ -1,5 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { recordRejection, styleMemoryHints } from "@/lib/editor-extras";
+
+const styleHints = styleMemoryHints();
 import { Check, CircleAlert, Scissors, Sparkles, Star, Undo2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
