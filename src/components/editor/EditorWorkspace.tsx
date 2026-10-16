@@ -118,13 +118,25 @@ function EditorToolbar({
           <Button
             variant={showProperties ? "secondary" : "ghost"}
             size="sm"
-            className="h-7 gap-1.5 px-2.5 text-xs"
+            className="hidden h-7 gap-1.5 px-2.5 text-xs md:inline-flex"
             onClick={toggleProperties}
             aria-pressed={showProperties}
           >
             <SlidersHorizontal className="size-3.5" />
             Panel
           </Button>
+          {onOpenDrawer && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 px-2.5 text-xs md:hidden"
+              onClick={onOpenDrawer}
+              aria-label="Open panel"
+            >
+              <SlidersHorizontal className="size-3.5" />
+              Panel
+            </Button>
+          )}
           <Button
             variant={showCopilot ? "secondary" : "ghost"}
             size="sm"
