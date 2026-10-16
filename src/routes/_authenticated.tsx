@@ -2,7 +2,6 @@ import { BrandMark } from "@/components/landing/site-header";
 import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
-  Film,
   LayoutGrid,
   Loader2,
   LogOut,
@@ -102,7 +101,6 @@ function AuthenticatedLayout() {
             to="/dashboard"
             className="flex items-center gap-2 rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
-            <Film className="size-5 text-primary" aria-hidden="true" strokeWidth={1.75} />
             <BrandMark />
           </Link>
 
