@@ -1,5 +1,6 @@
 import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
+  BarChart3,
   Film,
   LayoutGrid,
   Loader2,
@@ -27,6 +28,7 @@ const NAV = [
   { to: "/upload", label: "Upload", icon: UploadCloud },
   { to: "/trimmer", label: "Trimmer", icon: Scissors },
   { to: "/highlights", label: "Highlights", icon: Sparkles },
+  { to: "/analytics", label: "Analytics", icon: BarChart3 },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -57,7 +59,7 @@ function AuthenticatedLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background font-[family-name:var(--font-body)] text-foreground">
+    <div className="app-ambient relative min-h-screen bg-background font-[family-name:var(--font-body)] text-foreground">
       <header className="sticky top-0 z-30 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex w-full max-w-7xl items-center gap-6 px-6 py-3">
           <Link
@@ -110,7 +112,7 @@ function AuthenticatedLayout() {
         </div>
       </header>
 
-      <main className="mx-auto w-full max-w-7xl px-6 py-8">
+      <main key={pathname} className="page-enter relative mx-auto w-full max-w-7xl px-6 py-8">
         <Outlet />
       </main>
     </div>

@@ -37,14 +37,14 @@ function EditorToolbar({
 
   return (
     <TooltipProvider delayDuration={400}>
-      <header className="flex h-11 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur">
+      <header className="glass-panel relative z-10 m-2 flex h-12 shrink-0 items-center gap-2 rounded-xl px-3">
         <Link to="/dashboard" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
-          <Film className="size-4" strokeWidth={1.75} />
+          <Film className="size-4 text-primary" strokeWidth={1.75} />
           <span className="font-[family-name:var(--font-display)] text-sm">REELZOY</span>
         </Link>
         <div className="mx-2 h-4 w-px bg-border" />
         <span className="max-w-48 truncate text-sm">{videoName}</span>
-        {dirty && <span className="text-[10px] text-amber-500">Unsaved</span>}
+        {dirty && <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] text-warning">Unsaved</span>}
         <div className="mx-2 h-4 w-px bg-border" />
         <Tooltip>
           <TooltipTrigger asChild>
@@ -82,7 +82,7 @@ function EditorToolbar({
           </TooltipTrigger>
           <TooltipContent>Save timeline to edit plan (⌘S)</TooltipContent>
         </Tooltip>
-        {saveError && <span className="max-w-40 truncate text-[10px] text-red-400">{saveError}</span>}
+        {saveError && <span className="max-w-40 truncate text-[10px] text-destructive">{saveError}</span>}
         <div className="ml-auto flex items-center gap-1">
           <Button
             variant={showProperties ? "secondary" : "ghost"}
@@ -111,7 +111,7 @@ function EditorToolbar({
             <Sparkles className="size-3.5" />
             AI
           </Button>
-          <Button size="sm" className="h-7 gap-1.5 px-2.5 text-xs" onClick={() => setShowExport(true)}>
+          <Button size="sm" className="bg-brand-gradient h-7 gap-1.5 px-2.5 text-xs text-primary-foreground" onClick={() => setShowExport(true)}>
             <Download className="size-3.5" />
             Export
           </Button>
@@ -207,8 +207,8 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
         saving={saveMut.isPending}
         saveError={saveMut.isError ? String(saveMut.error) : null}
       />
-      <div className="flex min-h-0 flex-1 overflow-hidden">
-        <div className="flex min-w-0 flex-1 flex-col bg-black/80">
+      <div className="relative mx-2 flex min-h-0 flex-1 gap-2 overflow-hidden">
+        <div className="editor-stage flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-black/80">
           {planQ.isLoading ? (
             <div className="flex flex-1 items-center justify-center gap-2">
               <Loader2 className="size-4 animate-spin text-muted-foreground" />
@@ -222,7 +222,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
         {showCaptions && <CaptionsEditor />}
         {showCopilot && <AICopilot />}
       </div>
-      <div className="shrink-0 overflow-y-auto" style={{ maxHeight: "40vh", minHeight: 180 }}>
+      <div className="surface-card relative m-2 shrink-0 overflow-y-auto rounded-xl" style={{ maxHeight: "40vh", minHeight: 180 }}>
         <Timeline />
       </div>
       <ExportModal
