@@ -20,6 +20,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
+import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHighlightsRouteImport } from './routes/_authenticated/highlights'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -28,6 +29,7 @@ import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated
 import { Route as AuthCallbackRouteImport } from './routes/auth.callback'
 import { Route as EditorEditorVideoIdRouteImport } from './routes/_editor.editor.$videoId'
 import { Route as AuthenticatedVideosIdIndexRouteImport } from './routes/_authenticated/videos.$id.index'
+import { Route as AuthenticatedVideosIdPlanRouteImport } from './routes/_authenticated/videos.$id.plan'
 import { Route as AuthenticatedVideosIdRenderRouteImport } from './routes/_authenticated/videos.$id.render'
 import { Route as AuthenticatedVideosIdReviewRouteImport } from './routes/_authenticated/videos.$id.review'
 import { Route as AuthenticatedVideosIdThumbnailsRouteImport } from './routes/_authenticated/videos.$id.thumbnails'
@@ -86,6 +88,11 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
   path: '/verify-email',
   getParentRoute: () => rootRouteImport,
 } as any)
+const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
+  id: '/analytics',
+  path: '/analytics',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
   id: '/dashboard',
   path: '/dashboard',
@@ -127,6 +134,12 @@ const AuthenticatedVideosIdIndexRoute =
     path: '/videos/$id/',
     getParentRoute: () => AuthenticatedRoute,
   } as any)
+const AuthenticatedVideosIdPlanRoute =
+  AuthenticatedVideosIdPlanRouteImport.update({
+    id: '/videos/$id/plan',
+    path: '/videos/$id/plan',
+    getParentRoute: () => AuthenticatedRoute,
+  } as any)
 const AuthenticatedVideosIdRenderRoute =
   AuthenticatedVideosIdRenderRouteImport.update({
     id: '/videos/$id/render',
@@ -162,6 +175,7 @@ export interface FileRoutesByFullPath {
   '/reset-password': typeof ResetPasswordRoute
   '/templates': typeof TemplatesRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/highlights': typeof AuthenticatedHighlightsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -169,6 +183,7 @@ export interface FileRoutesByFullPath {
   '/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/editor/$videoId': typeof EditorEditorVideoIdRoute
+  '/videos/$id/plan': typeof AuthenticatedVideosIdPlanRoute
   '/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
   '/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
   '/videos/$id/thumbnails': typeof AuthenticatedVideosIdThumbnailsRoute
@@ -185,6 +200,7 @@ export interface FileRoutesByTo {
   '/reset-password': typeof ResetPasswordRoute
   '/templates': typeof TemplatesRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/analytics': typeof AuthenticatedAnalyticsRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/highlights': typeof AuthenticatedHighlightsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -192,6 +208,7 @@ export interface FileRoutesByTo {
   '/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/editor/$videoId': typeof EditorEditorVideoIdRoute
+  '/videos/$id/plan': typeof AuthenticatedVideosIdPlanRoute
   '/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
   '/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
   '/videos/$id/thumbnails': typeof AuthenticatedVideosIdThumbnailsRoute
@@ -211,6 +228,7 @@ export interface FileRoutesById {
   '/reset-password': typeof ResetPasswordRoute
   '/templates': typeof TemplatesRoute
   '/verify-email': typeof VerifyEmailRoute
+  '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/highlights': typeof AuthenticatedHighlightsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -218,6 +236,7 @@ export interface FileRoutesById {
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
   '/auth/callback': typeof AuthCallbackRoute
   '/_editor/editor/$videoId': typeof EditorEditorVideoIdRoute
+  '/_authenticated/videos/$id/plan': typeof AuthenticatedVideosIdPlanRoute
   '/_authenticated/videos/$id/render': typeof AuthenticatedVideosIdRenderRoute
   '/_authenticated/videos/$id/review': typeof AuthenticatedVideosIdReviewRoute
   '/_authenticated/videos/$id/thumbnails': typeof AuthenticatedVideosIdThumbnailsRoute
@@ -236,6 +255,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/templates'
     | '/verify-email'
+    | '/analytics'
     | '/dashboard'
     | '/highlights'
     | '/settings'
@@ -243,6 +263,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/auth/callback'
     | '/editor/$videoId'
+    | '/videos/$id/plan'
     | '/videos/$id/render'
     | '/videos/$id/review'
     | '/videos/$id/thumbnails'
@@ -259,6 +280,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/templates'
     | '/verify-email'
+    | '/analytics'
     | '/dashboard'
     | '/highlights'
     | '/settings'
@@ -266,6 +288,7 @@ export interface FileRouteTypes {
     | '/upload'
     | '/auth/callback'
     | '/editor/$videoId'
+    | '/videos/$id/plan'
     | '/videos/$id/render'
     | '/videos/$id/review'
     | '/videos/$id/thumbnails'
@@ -284,6 +307,7 @@ export interface FileRouteTypes {
     | '/reset-password'
     | '/templates'
     | '/verify-email'
+    | '/_authenticated/analytics'
     | '/_authenticated/dashboard'
     | '/_authenticated/highlights'
     | '/_authenticated/settings'
@@ -291,6 +315,7 @@ export interface FileRouteTypes {
     | '/_authenticated/upload'
     | '/auth/callback'
     | '/_editor/editor/$videoId'
+    | '/_authenticated/videos/$id/plan'
     | '/_authenticated/videos/$id/render'
     | '/_authenticated/videos/$id/review'
     | '/_authenticated/videos/$id/thumbnails'
@@ -392,6 +417,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof VerifyEmailRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/_authenticated/analytics': {
+      id: '/_authenticated/analytics'
+      path: '/analytics'
+      fullPath: '/analytics'
+      preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/dashboard': {
       id: '/_authenticated/dashboard'
       path: '/dashboard'
@@ -448,6 +480,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedVideosIdIndexRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/videos/$id/plan': {
+      id: '/_authenticated/videos/$id/plan'
+      path: '/videos/$id/plan'
+      fullPath: '/videos/$id/plan'
+      preLoaderRoute: typeof AuthenticatedVideosIdPlanRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/videos/$id/render': {
       id: '/_authenticated/videos/$id/render'
       path: '/videos/$id/render'
@@ -480,11 +519,13 @@ declare module '@tanstack/react-router' {
 }
 
 interface AuthenticatedRouteChildren {
+  AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHighlightsRoute: typeof AuthenticatedHighlightsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTrimmerRoute: typeof AuthenticatedTrimmerRoute
   AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
+  AuthenticatedVideosIdPlanRoute: typeof AuthenticatedVideosIdPlanRoute
   AuthenticatedVideosIdRenderRoute: typeof AuthenticatedVideosIdRenderRoute
   AuthenticatedVideosIdReviewRoute: typeof AuthenticatedVideosIdReviewRoute
   AuthenticatedVideosIdThumbnailsRoute: typeof AuthenticatedVideosIdThumbnailsRoute
@@ -493,11 +534,13 @@ interface AuthenticatedRouteChildren {
 }
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
+  AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHighlightsRoute: AuthenticatedHighlightsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTrimmerRoute: AuthenticatedTrimmerRoute,
   AuthenticatedUploadRoute: AuthenticatedUploadRoute,
+  AuthenticatedVideosIdPlanRoute: AuthenticatedVideosIdPlanRoute,
   AuthenticatedVideosIdRenderRoute: AuthenticatedVideosIdRenderRoute,
   AuthenticatedVideosIdReviewRoute: AuthenticatedVideosIdReviewRoute,
   AuthenticatedVideosIdThumbnailsRoute: AuthenticatedVideosIdThumbnailsRoute,
