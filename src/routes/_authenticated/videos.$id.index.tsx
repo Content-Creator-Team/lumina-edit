@@ -120,8 +120,10 @@ function VideoDetailPage() {
             Uploaded {formatDate(video.created_at ?? video.uploaded_at)}
           </p>
         </div>
-        <StatusBadge status={status} />
+      <StatusBadge status={status} />
       </div>
+
+      <GoalPicker videoId={id} />
 
       {status === "failed" && (
         <p role="alert" className="mt-6 rounded-md border border-destructive/40 p-4 text-sm">
