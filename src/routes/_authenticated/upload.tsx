@@ -11,9 +11,9 @@ import { ApiError, uploadVideoFile } from "@/lib/api-client";
 export const Route = createFileRoute("/_authenticated/upload")({
   head: () => ({
     meta: [
-      { title: "Upload footage — Cutroom" },
+      { title: "Upload footage — REELZOY" },
       { name: "description", content: "Upload MP4, MOV or MKV footage for AI-assisted editing." },
-      { property: "og:title", content: "Upload footage — Cutroom" },
+      { property: "og:title", content: "Upload footage — REELZOY" },
       {
         property: "og:description",
         content: "Upload MP4, MOV or MKV footage for AI-assisted editing.",

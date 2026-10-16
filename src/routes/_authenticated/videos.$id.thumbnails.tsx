@@ -10,7 +10,7 @@ import { videoQuery, videoTitle } from "@/lib/queries";
 export const Route = createFileRoute("/_authenticated/videos/$id/thumbnails")({
   head: () => ({
     meta: [
-      { title: "Thumbnail Studio — Cutroom" },
+      { title: "Thumbnail Studio — REELZOY" },
       { name: "description", content: "Browse and regenerate AI thumbnail options." },
       { name: "robots", content: "noindex" },
     ],

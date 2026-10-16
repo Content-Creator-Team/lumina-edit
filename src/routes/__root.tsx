@@ -39,15 +39,15 @@ function NotFoundComponent() {
   );
 }
 
-function ErrorComponent({ error, reset }: { error: Error; reset: () => void }) {
+function ErrorComponent({ error, reset }: import("@tanstack/react-router").ErrorComponentProps) {
   console.error(error);
   const router = useRouter();
   useEffect(() => {
     reportLovableError(error, { boundary: "tanstack_root_error_component" });
 
     if (
-      import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN &&
-      import.meta.env.VITE_PUBLIC_POSTHOG_HOST
+      import.meta.env["VITE_PUBLIC_POSTHOG_PROJECT_TOKEN"] &&
+      import.meta.env["VITE_PUBLIC_POSTHOG_HOST"]
     ) {
       posthog.captureException(error);
     }
@@ -89,18 +89,18 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Cutroom — AI-assisted video editing" },
+      { title: "REELZOY — Turn Your Ideas Into Viral Videos" },
       {
         name: "description",
         content:
-          "Cutroom turns raw footage into a reviewable edit plan: scene detection, transcription and an AI cut you approve.",
+          "REELZOY turns raw footage into a reviewable edit plan: scene detection, transcription and an AI cut you approve.",
       },
-      { name: "author", content: "Cutroom" },
-      { property: "og:title", content: "Cutroom — AI-assisted video editing" },
+      { name: "author", content: "REELZOY" },
+      { property: "og:title", content: "REELZOY — Turn Your Ideas Into Viral Videos" },
       {
         property: "og:description",
         content:
-          "Cutroom turns raw footage into a reviewable edit plan: scene detection, transcription and an AI cut you approve.",
+          "REELZOY turns raw footage into a reviewable edit plan: scene detection, transcription and an AI cut you approve.",
       },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary_large_image" },
@@ -114,7 +114,7 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
       { rel: "preconnect", href: "https://fonts.gstatic.com", crossOrigin: "anonymous" },
       {
         rel: "stylesheet",
-        href: "https://fonts.googleapis.com/css2?family=Archivo:wght@400;500;600&family=Bodoni+Moda:opsz,wght@6..96,400;6..96,500&display=swap",
+        href: "https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700&family=Sora:wght@500;600;700;800&display=swap",
       },
       { rel: "icon", href: "/favicon.ico", type: "image/x-icon" },
     ],
@@ -142,19 +142,11 @@ function RootShell({ children }: { children: ReactNode }) {
 
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
-  const posthogApiKey = import.meta.env.VITE_PUBLIC_POSTHOG_PROJECT_TOKEN;
-  const posthogHost = import.meta.env.VITE_PUBLIC_POSTHOG_HOST;
+  const posthogApiKey = import.meta.env["VITE_PUBLIC_POSTHOG_PROJECT_TOKEN"];
+  const posthogHost = import.meta.env["VITE_PUBLIC_POSTHOG_HOST"];
 
-  if (import.meta.env.DEV && !posthogApiKey) {
-    throw new Error(
-      "VITE_PUBLIC_POSTHOG_PROJECT_TOKEN variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once VITE_PUBLIC_POSTHOG_PROJECT_TOKEN is configured",
-    );
-  }
-
-  if (import.meta.env.DEV && !posthogHost) {
-    throw new Error(
-      "VITE_PUBLIC_POSTHOG_HOST variable required by PostHog is missing or un-configured, this causes events to be silently missed. This error stops appearing once VITE_PUBLIC_POSTHOG_HOST is configured",
-    );
+  if (import.meta.env.DEV && (!posthogApiKey || !posthogHost)) {
+    console.warn("PostHog is not configured; analytics events are disabled.");
   }
 
   const app = (

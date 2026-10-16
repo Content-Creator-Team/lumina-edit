@@ -40,7 +40,7 @@ function EditorToolbar({
       <header className="flex h-11 shrink-0 items-center gap-2 border-b border-border bg-background/95 px-3 backdrop-blur">
         <Link to="/dashboard" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
           <Film className="size-4" strokeWidth={1.75} />
-          <span className="font-[family-name:var(--font-display)] text-sm">Cutroom</span>
+          <span className="font-[family-name:var(--font-display)] text-sm">REELZOY</span>
         </Link>
         <div className="mx-2 h-4 w-px bg-border" />
         <span className="max-w-48 truncate text-sm">{videoName}</span>

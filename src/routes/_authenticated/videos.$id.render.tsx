@@ -16,9 +16,9 @@ export const Route = createFileRoute("/_authenticated/videos/$id/render")({
     typeof search["job"] === "string" ? { job: search["job"] } : {},
   head: () => ({
     meta: [
-      { title: "Render — Cutroom" },
+      { title: "Render — REELZOY" },
       { name: "description", content: "Track the render job and download the finished cut." },
-      { property: "og:title", content: "Render — Cutroom" },
+      { property: "og:title", content: "Render — REELZOY" },
       { property: "og:description", content: "Track the render job and download the finished cut." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

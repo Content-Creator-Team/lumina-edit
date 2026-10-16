@@ -8,9 +8,9 @@ import { isKeycloakConfigured, keycloakAccountConsoleUrl } from "@/lib/keycloak-
 export const Route = createFileRoute("/_authenticated/settings")({
   head: () => ({
     meta: [
-      { title: "Settings — Cutroom" },
+      { title: "Settings — REELZOY" },
       { name: "description", content: "Your profile, organisation, role and workspace links." },
-      { property: "og:title", content: "Settings — Cutroom" },
+      { property: "og:title", content: "Settings — REELZOY" },
       { property: "og:description", content: "Your profile, organisation, role and workspace links." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

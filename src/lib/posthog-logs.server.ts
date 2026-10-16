@@ -40,12 +40,12 @@ function getPostHogLogsLogger() {
       "deployment.environment": process.env["NODE_ENV"] ?? "development",
     }),
     logRecordProcessors: [
-      new BatchLogRecordProcessor(
-        new OTLPLogExporter({
+      new BatchLogRecordProcessor({
+        exporter: new OTLPLogExporter({
           url: `${host.replace(/\/$/, "")}/i/v1/logs`,
           headers: { Authorization: `Bearer ${apiKey}` },
         }),
-      ),
+      }),
     ],
   });
   posthogLogsSdk.start();

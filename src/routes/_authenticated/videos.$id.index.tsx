@@ -10,9 +10,9 @@ import { POLL_INTERVAL, formatDate, isTerminal, videoQuery, videoTitle } from "@
 export const Route = createFileRoute("/_authenticated/videos/$id/")({
   head: () => ({
     meta: [
-      { title: "Processing — Cutroom" },
+      { title: "Processing — REELZOY" },
       { name: "description", content: "Follow scene detection, transcription and plan generation." },
-      { property: "og:title", content: "Processing — Cutroom" },
+      { property: "og:title", content: "Processing — REELZOY" },
       {
         property: "og:description",
         content: "Follow scene detection, transcription and plan generation.",

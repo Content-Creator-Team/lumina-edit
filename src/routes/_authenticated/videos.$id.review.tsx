@@ -39,9 +39,9 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/videos/$id/review")({
   head: () => ({
     meta: [
-      { title: "Review edit plan — Cutroom" },
+      { title: "Review edit plan — REELZOY" },
       { name: "description", content: "Review, trim and approve the AI-generated edit plan." },
-      { property: "og:title", content: "Review edit plan — Cutroom" },
+      { property: "og:title", content: "Review edit plan — REELZOY" },
       { property: "og:description", content: "Review, trim and approve the AI-generated edit plan." },
       { property: "og:type", content: "website" },
       { name: "twitter:card", content: "summary" },

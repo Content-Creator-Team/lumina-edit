@@ -27,12 +27,12 @@ import { cn } from "@/lib/utils";
 export const Route = createFileRoute("/_authenticated/trimmer")({
   head: () => ({
     meta: [
-      { title: "Quick trimmer — Cutroom" },
+      { title: "Quick trimmer — REELZOY" },
       {
         name: "description",
         content: "Trim a local video with draggable handles, split points and export-ready cut notes.",
       },
-      { property: "og:title", content: "Quick trimmer — Cutroom" },
+      { property: "og:title", content: "Quick trimmer — REELZOY" },
       {
         property: "og:description",
         content: "Trim a local video with draggable handles, split points and export-ready cut notes.",
@@ -343,7 +343,7 @@ function TrimmerPage() {
     const url = URL.createObjectURL(blob);
     const anchor = document.createElement("a");
     anchor.href = url;
-    anchor.download = "cutroom-trim-list.json";
+    anchor.download = "reelzoy-trim-list.json";
     anchor.click();
     URL.revokeObjectURL(url);
   }

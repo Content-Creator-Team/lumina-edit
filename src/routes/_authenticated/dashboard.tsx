@@ -10,9 +10,9 @@ import { POLL_INTERVAL, formatDate, isTerminal, videoTitle, videosQuery } from "
 export const Route = createFileRoute("/_authenticated/dashboard")({
   head: () => ({
     meta: [
-      { title: "Your videos — Cutroom" },
+      { title: "Your videos — REELZOY" },
       { name: "description", content: "Track uploads, AI processing and renders across your footage." },
-      { property: "og:title", content: "Your videos — Cutroom" },
+      { property: "og:title", content: "Your videos — REELZOY" },
       {
         property: "og:description",
         content: "Track uploads, AI processing and renders across your footage.",
@@ -70,7 +70,7 @@ function DashboardPage() {
           <EmptyState
             icon={<Clapperboard className="size-6 text-muted-foreground" aria-hidden="true" />}
             title="No videos yet"
-            description="Upload your first clip and Cutroom will detect scenes, transcribe the audio and draft an edit plan for you to review."
+            description="Upload your first clip and REELZOY will detect scenes, transcribe the audio and draft an edit plan for you to review."
             action={
               <Button asChild>
                 <Link to="/upload">Upload your first video</Link>

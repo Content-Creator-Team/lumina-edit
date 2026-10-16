@@ -12,7 +12,7 @@ export const Route = createFileRoute("/register")({
     typeof search["invite"] === "string" ? { invite: search["invite"] } : {},
   head: () => ({
     meta: [
-      { title: "Create account — Cutroom" },
+      { title: "Create account — REELZOY" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -53,8 +53,8 @@ function RegisterPage() {
           email,
           password,
           confirm_password: confirmPassword,
-          full_name: fullName || undefined,
-          invitation_token: invite || undefined,
+          ...(fullName ? { full_name: fullName } : {}),
+          ...(invite ? { invitation_token: invite } : {}),
         },
       });
       posthog.capture("account_registered", { invited: Boolean(invite) });
@@ -83,7 +83,7 @@ function RegisterPage() {
             className="mx-auto flex size-12 items-center justify-center rounded-xl"
             style={{ background: "linear-gradient(140deg, var(--primary), var(--primary-deep))" }}
           />
-          <h1 className="mt-8 font-[family-name:var(--font-display)] text-3xl">Cutroom</h1>
+          <h1 className="mt-8 font-[family-name:var(--font-display)] text-3xl">REELZOY</h1>
           <p className="mt-2 text-sm text-cinema-muted">Create your account.</p>
         </div>
 

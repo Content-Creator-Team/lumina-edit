@@ -12,7 +12,7 @@ export const Route = createFileRoute("/reset-password")({
     typeof search["token"] === "string" ? { token: search["token"] } : {},
   head: () => ({
     meta: [
-      { title: "Reset password — Cutroom" },
+      { title: "Reset password — REELZOY" },
       { name: "robots", content: "noindex" },
     ],
   }),
@@ -74,7 +74,7 @@ function ResetPasswordPage() {
             className="mx-auto flex size-12 items-center justify-center rounded-xl"
             style={{ background: "linear-gradient(140deg, var(--primary), var(--primary-deep))" }}
           />
-          <h1 className="mt-8 font-[family-name:var(--font-display)] text-3xl">Cutroom</h1>
+          <h1 className="mt-8 font-[family-name:var(--font-display)] text-3xl">REELZOY</h1>
           <p className="mt-2 text-sm text-cinema-muted">
             {done ? "Password updated." : "Choose a new password."}
           </p>

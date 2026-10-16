@@ -9,8 +9,8 @@ import { useAuth } from "@/lib/auth-context";
 import { loginWithPassword, verifyMfa, type MfaChallenge } from "@/lib/auth.functions";
 import { isDemoMode } from "@/lib/runtime-config";
 
-const TITLE = "Log in — Cutroom";
-const DESCRIPTION = "Sign in to Cutroom to upload footage and review AI edit plans.";
+const TITLE = "Log in — REELZOY";
+const DESCRIPTION = "Sign in to REELZOY to upload footage and review AI edit plans.";
 
 export const Route = createFileRoute("/login")({
   validateSearch: (search: Record<string, unknown>): { redirect?: string } =>
@@ -106,7 +106,7 @@ function LoginPage() {
             className="mx-auto flex size-12 items-center justify-center rounded-xl"
             style={{ background: "linear-gradient(140deg, var(--primary), var(--primary-deep))" }}
           />
-          <h1 className="mt-8 font-[family-name:var(--font-display)] text-3xl">Cutroom</h1>
+          <h1 className="mt-8 font-[family-name:var(--font-display)] text-3xl">REELZOY</h1>
           <p className="mt-2 text-sm text-cinema-muted">
             {mfaChallenge ? "Enter your authenticator code to continue." : "Sign in to your account."}
           </p>

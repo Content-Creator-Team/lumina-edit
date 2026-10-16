@@ -65,7 +65,7 @@ function AuthenticatedLayout() {
             className="flex items-center gap-2 rounded-sm focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
           >
             <Film className="size-5 text-primary" aria-hidden="true" strokeWidth={1.75} />
-            <span className="font-[family-name:var(--font-display)] text-lg">Cutroom</span>
+            <span className="font-[family-name:var(--font-display)] text-lg">REELZOY</span>
           </Link>
 
           <DemoBadge className="hidden lg:inline-flex" />

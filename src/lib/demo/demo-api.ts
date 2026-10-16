@@ -356,7 +356,7 @@ export async function demoRequest<T>({ path, method, body }: DemoRequest): Promi
 
     if (parts.length === 2 && method === "PATCH") {
       const patch = (body ?? { segments: [] }) as PlanPatch;
-      for (const incoming of patch.segments) {
+      for (const incoming of patch.segments ?? []) {
         const target = plan.segments.find((entry) => entry.id === incoming.id);
         if (!target) continue;
         Object.assign(target, incoming);
