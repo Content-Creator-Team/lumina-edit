@@ -2,6 +2,7 @@ import { BrandMark } from "@/components/landing/site-header";
 import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
+  ChevronDown,
   LayoutGrid,
   Loader2,
   LogOut,
@@ -16,6 +17,12 @@ import { useEffect, useRef } from "react";
 import { DemoBadge } from "@/components/demo-badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/lib/auth-context";
 import { isDemoMode } from "@/lib/runtime-config";
 import { cn } from "@/lib/utils";
@@ -25,13 +32,17 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
 });
 
+// Primary destinations stay visible; occasional tools live under "More".
 const NAV = [
   { to: "/dashboard", label: "Videos", icon: LayoutGrid },
   { to: "/upload", label: "Upload", icon: UploadCloud },
-  { to: "/trimmer", label: "Trimmer", icon: Scissors },
   { to: "/highlights", label: "Highlights", icon: Sparkles },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/brand", label: "Brand", icon: Palette },
+] as const;
+
+const MORE_NAV = [
+  { to: "/trimmer", label: "Trimmer", icon: Scissors },
+  { to: "/brand", label: "Brand kit", icon: Palette },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
