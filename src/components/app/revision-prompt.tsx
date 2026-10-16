@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, api } from "@/lib/api-client";
 import type { EditPlan } from "@/lib/api-types";
+import { getProjectGoal, goalLabel, styleMemoryHints } from "@/lib/editor-extras";
 
 type Props = {
   videoId: string;
