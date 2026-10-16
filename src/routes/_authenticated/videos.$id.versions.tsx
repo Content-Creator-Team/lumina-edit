@@ -8,6 +8,7 @@ import { StatusBadge } from "@/components/app/status-badge";
 import { Button } from "@/components/ui/button";
 import { editPlansQuery, formatDate, formatTimecode } from "@/lib/queries";
 import type { EditPlan } from "@/lib/api-types";
+import { VariantCuts } from "@/components/app/variant-cuts";
 
 export const Route = createFileRoute("/_authenticated/videos/$id/versions")({
   head: () => ({
@@ -44,7 +45,7 @@ function VersionsPage() {
   const plans = [...query.data].sort((a, b) => (b.version ?? 0) - (a.version ?? 0));
 
   return (
-    <div className="mx-auto max-w-4xl">
+    <div className="mx-auto max-w-5xl">
       <Link
         to="/videos/$id"
         params={{ id }}
@@ -57,6 +58,9 @@ function VersionsPage() {
         Every plan version is kept exactly as it was. History is never rewritten.
       </p>
 
+      <VariantCuts videoId={id} />
+
+      <h2 className="mt-10 font-[family-name:var(--font-display)] text-xl">Plan history</h2>
       <p className="mt-6 flex items-start gap-2 rounded-md border border-border p-4 text-sm text-muted-foreground">
         <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
         Restoring an older version isn't available: the API has no restore endpoint, and creating a
