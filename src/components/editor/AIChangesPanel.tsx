@@ -198,10 +198,12 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
           return (
             <li
               key={seg.id}
+              data-seg={seg.id}
               className={cn(
                 "ai-change-card rounded-lg border bg-card p-2.5 text-xs",
                 low && !decision ? "border-warning/60" : "border-border",
                 decision === "rejected" && "opacity-70",
+                focusId === seg.id && "ring-2 ring-primary",
               )}
             >
               <button
