@@ -122,11 +122,11 @@ export function FirstRunOverlay({ videoId, editCount }: { videoId: string; editC
   const setRightTab = useEditorStore((s) => s.setRightTab);
   const key = `reelzoy.editor_intro.${videoId}`;
   useEffect(() => {
-    if (editCount > 0 && !localStorage.getItem(key)) setOpen(true);
+    try { if (editCount > 0 && !localStorage.getItem(key)) setOpen(true); } catch { /* storage blocked */ }
   }, [editCount, key]);
   if (!open) return null;
   const close = () => {
-    localStorage.setItem(key, "1");
+    try { localStorage.setItem(key, "1"); } catch { /* storage blocked */ }
     setOpen(false);
   };
   return (
