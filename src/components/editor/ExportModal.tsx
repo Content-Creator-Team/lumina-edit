@@ -20,12 +20,30 @@ type Props = {
 };
 
 export function ExportModal({ onBeforeExport }: Props) {
-  const { showExport, setShowExport, planId, videoId, dirty } = useEditorStore();
+  const { showExport, setShowExport, planId, videoId, dirty, aiDecisions, setRightTab, showProperties, toggleProperties } = useEditorStore();
   const navigate = useNavigate();
   const [presetId, setPresetId] = useState("youtube_shorts");
   const [burnCaptions, setBurnCaptions] = useState(true);
   const [brandKitId, setBrandKitId] = useState<string>("");
   const [preferFaces, setPreferFaces] = useState(true);
+  const [ackLowConf, setAckLowConf] = useState(false);
+
+  const planQ = useQuery({
+    queryKey: ["edit-plan", videoId],
+    queryFn: () => api.getEditPlan(videoId!),
+    enabled: showExport && !!videoId,
+    staleTime: 30_000,
+  });
+
+  // Pre-export check: unreviewed low-confidence edits.
+  const unreviewedLow = useMemo(
+    () =>
+      (planQ.data?.segments ?? []).filter(
+        (s) => typeof s.confidence === "number" && s.confidence < 0.65 && !aiDecisions[s.id],
+      ),
+    [planQ.data, aiDecisions],
+  );
+  const showLowConfWarning = unreviewedLow.length > 0 && !ackLowConf;
 
   const presetsQ = useQuery({
     queryKey: ["export-presets"],
