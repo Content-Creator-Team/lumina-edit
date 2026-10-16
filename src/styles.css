@@ -303,3 +303,26 @@
     transform: none !important;
   }
 }
+
+/* Opener + demo reel */
+@keyframes opener-line { from { opacity: 0; transform: translateY(24px) rotateX(50deg); filter: blur(8px); } to { opacity: 1; transform: none; filter: none; } }
+@keyframes opener-logo { from { opacity: 0; transform: scale(0.6) translateZ(-200px); letter-spacing: 0.4em; } to { opacity: 1; transform: none; } }
+@keyframes opener-progress { from { width: 0; } to { width: 100%; } }
+@keyframes opener-aperture { from { transform: scale(0.05) rotate(0deg); opacity: 0.9; } to { transform: scale(1) rotate(120deg); opacity: 0.25; } }
+@keyframes opener-bar { from { transform: scaleY(1); } to { transform: scaleY(0); } }
+@keyframes demo-kenburns { from { transform: scale(1.35); } to { transform: scale(1.6); } }
+@keyframes demo-progress { from { width: 0; } to { width: 100%; } }
+.opener-line { animation: opener-line 700ms cubic-bezier(0.16, 0.84, 0.32, 1) both; }
+.opener-logo { animation: opener-logo 900ms cubic-bezier(0.16, 0.84, 0.32, 1) both; }
+.opener-progress { animation: opener-progress 4.3s linear both; }
+.opener-aperture { background: conic-gradient(from 0deg, var(--tint-1), var(--tint-2), var(--tint-3), var(--tint-1)); filter: blur(60px); animation: opener-aperture 5s ease-out both; }
+.opener-bar-top, .opener-bar-bottom { animation: opener-bar 900ms 3.3s ease-in forwards; }
+.opener-bar-top { transform-origin: top; }
+.opener-bar-bottom { transform-origin: bottom; }
+.demo-screen { transform: rotateX(8deg); transition: transform 600ms ease; }
+.demo-screen:hover { transform: rotateX(0deg) scale(1.01); }
+.demo-kenburns { animation: demo-kenburns 3s ease-out both; }
+.demo-progress { animation: demo-progress 3s linear both; }
+@media (prefers-reduced-motion: reduce) {
+  .demo-kenburns, .demo-progress, .demo-screen { animation: none; transform: none; }
+}

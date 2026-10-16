@@ -1,7 +1,11 @@
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { ArrowRight, Play, Sparkles, Upload, Wand2, MonitorSmartphone, Eye, Share2, Check } from "lucide-react";
 
-import heroImg from "@/assets/hero-reelzoy.jpg";
+import heroImg from "@/assets/hero-reelzoy-3d.jpg";
+import { DemoReel } from "@/components/landing/demo-reel";
+import { Opener } from "@/components/landing/opener";
+import { ParallaxStage } from "@/components/landing/parallax-stage";
+import { TiltHero } from "@/components/landing/tilt-hero";
 import { FEATURES } from "@/components/landing/features-data";
 import { Journey } from "@/components/landing/journey";
 import { Reveal } from "@/components/landing/reveal";
@@ -45,6 +49,7 @@ const FAQ = [
 function Landing() {
   return (
     <div className="min-h-screen bg-background text-foreground antialiased">
+      <Opener />
       <SiteHeader />
       <main>
         <section className="relative overflow-hidden">
@@ -56,6 +61,7 @@ function Landing() {
                 "radial-gradient(60% 60% at 80% 30%, color-mix(in oklab, var(--tint-1) 30%, transparent), transparent 70%), radial-gradient(50% 50% at 10% 90%, color-mix(in oklab, var(--tint-2) 22%, transparent), transparent 70%)",
             }}
           />
+          <ParallaxStage className="opacity-60" />
           <div className="relative mx-auto grid w-full max-w-6xl items-center gap-12 px-6 py-16 lg:grid-cols-2 lg:py-24">
             <div>
               <Reveal>
@@ -87,13 +93,7 @@ function Landing() {
               </Reveal>
             </div>
             <Reveal delay={150}>
-              <img
-                src={heroImg}
-                alt="REELZOY editor on a phone surrounded by short-form video clips"
-                width={1280}
-                height={1024}
-                className="w-full rounded-3xl border border-border shadow-[var(--shadow-card)]"
-              />
+              <TiltHero src={heroImg} alt="3D render of the REELZOY editor on a phone surrounded by floating short-form video clips" />
             </Reveal>
           </div>
         </section>
@@ -145,6 +145,7 @@ function Landing() {
           </div>
         </section>
 
+        <DemoReel />
         <Journey />
         <TimelineShowcase />
 
