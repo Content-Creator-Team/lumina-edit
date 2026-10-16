@@ -183,9 +183,14 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
         {!hasConfidence && (
           <p className="text-[10px] text-muted-foreground">The backend didn't report confidence for this plan.</p>
         )}
+        <p className="text-[10px] text-muted-foreground">
+          Keyboard: <kbd className="rounded border border-border bg-muted px-1 font-mono">A</kbd> accept ·{" "}
+          <kbd className="rounded border border-border bg-muted px-1 font-mono">R</kbd> reject ·{" "}
+          <kbd className="rounded border border-border bg-muted px-1 font-mono">N</kbd> next pending
+        </p>
       </div>
 
-      <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+      <ul ref={listRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {visible.map((seg) => {
           const cut = isCut(seg);
           const decision = aiDecisions[seg.id];
