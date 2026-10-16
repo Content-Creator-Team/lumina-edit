@@ -469,8 +469,9 @@ export function AICopilot() {
         </Button>
       </div>
       <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col overflow-hidden">
-        <TabsList className="mx-2 mt-2 grid h-auto grid-cols-3 gap-0.5">
+        <TabsList className="mx-2 mt-2 grid h-auto grid-cols-4 gap-0.5">
           <TabsTrigger value="command" className="text-[10px]">Command</TabsTrigger>
+          <TabsTrigger value="find" className="text-[10px]">Find</TabsTrigger>
           <TabsTrigger value="silence" className="text-[10px]">Silence</TabsTrigger>
           <TabsTrigger value="clips" className="text-[10px]">Clips</TabsTrigger>
           <TabsTrigger value="score" className="text-[10px]">Score</TabsTrigger>
@@ -479,6 +480,7 @@ export function AICopilot() {
         </TabsList>
         <div className="flex-1 overflow-y-auto">
           <TabsContent value="command" className="mt-0"><CommandPanel videoId={videoId} /></TabsContent>
+          <TabsContent value="find" className="mt-0"><FindPanel videoId={videoId} /></TabsContent>
           <TabsContent value="silence" className="mt-0"><SilenceRemovalPanel videoId={videoId} /></TabsContent>
           <TabsContent value="clips" className="mt-0"><SmartClipsPanel videoId={videoId} /></TabsContent>
           <TabsContent value="score" className="mt-0"><EngagementPanel videoId={videoId} /></TabsContent>
