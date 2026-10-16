@@ -41,6 +41,37 @@ function AuthenticatedLayout() {
     typeof window === "undefined" ? pathname : window.location.pathname,
   );
 
+  // Pointer-driven 3D tilt for every card in the app (skipped for reduced motion).
+  useEffect(() => {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    let current: HTMLElement | null = null;
+    const reset = (el: HTMLElement) => {
+      el.style.setProperty("--rx", "0deg");
+      el.style.setProperty("--ry", "0deg");
+      el.style.setProperty("--lift", "0px");
+      el.style.setProperty("--glare", "0");
+    };
+    const onMove = (e: PointerEvent) => {
+      const card = (e.target as HTMLElement | null)?.closest?.<HTMLElement>("main .surface-card");
+      if (current && current !== card) reset(current);
+      current = card ?? null;
+      if (!card) return;
+      card.classList.add("tilt-3d");
+      const r = card.getBoundingClientRect();
+      const x = (e.clientX - r.left) / r.width;
+      const y = (e.clientY - r.top) / r.height;
+      const strength = r.width > 600 ? 2.5 : 6;
+      card.style.setProperty("--ry", `${(x - 0.5) * strength}deg`);
+      card.style.setProperty("--rx", `${(0.5 - y) * strength}deg`);
+      card.style.setProperty("--lift", "-3px");
+      card.style.setProperty("--mx", `${x * 100}%`);
+      card.style.setProperty("--my", `${y * 100}%`);
+      card.style.setProperty("--glare", "1");
+    };
+    window.addEventListener("pointermove", onMove, { passive: true });
+    return () => window.removeEventListener("pointermove", onMove);
+  }, []);
+
   useEffect(() => {
     if (status === "unauthenticated") {
       navigate({ to: "/login", search: { redirect: initialPath.current }, replace: true });
@@ -111,6 +142,13 @@ function AuthenticatedLayout() {
           </div>
         </div>
       </header>
+
+      <div className="app-depth" aria-hidden="true">
+        <div className="app-depth-grid" />
+        <span className="app-depth-orb" style={{ width: 220, height: 220, top: "12%", left: "-4%" }} />
+        <span className="app-depth-orb" style={{ width: 160, height: 160, top: "58%", right: "-3%", animationDelay: "-5s" }} />
+        <span className="app-depth-ring" style={{ width: 340, height: 340, top: "-8%", right: "8%" }} />
+      </div>
 
       <main key={pathname} className="page-enter relative mx-auto w-full max-w-7xl px-6 py-8">
         <Outlet />

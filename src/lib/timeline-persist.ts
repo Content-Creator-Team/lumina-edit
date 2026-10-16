@@ -114,6 +114,26 @@ export function buildPlanPatchFromTimeline(
   return { segments, create, delete_ids: [] };
 }
 
+/** Build a single video clip for a plan segment (used to restore a rejected cut). */
+export function clipForSegment(seg: PlanSegment, startTime: number): Clip {
+  const srcStart = seg.start_ts ?? seg.start ?? 0;
+  const srcEnd = seg.end_ts ?? seg.end ?? srcStart + 5;
+  return {
+    id: clipIdForSegment(seg.id),
+    trackId: "vt1",
+    startTime,
+    duration: Math.max(srcEnd - srcStart, 0.5),
+    trimIn: 0,
+    trimOut: 0,
+    type: "video",
+    ...(seg.scene_id ? { sourceId: seg.scene_id } : {}),
+    sourceStart: srcStart,
+    ...(seg.caption ? { caption: seg.caption } : {}),
+    ...(seg.reason ? { aiReason: seg.reason } : {}),
+    ...(typeof seg.confidence === "number" ? { aiConfidence: seg.confidence } : {}),
+  };
+}
+
 export function planToEditorTracks(plan: EditPlan): Track[] {
   const kept = plan.segments
     .filter((s) => s.action.toString().toLowerCase() === "keep")
@@ -144,6 +164,8 @@ export function planToEditorTracks(plan: EditPlan): Track[] {
       fadeIn: seg.fade_in ?? 0,
       fadeOut: seg.fade_out ?? 0,
       effect: effect && effect !== "none" ? effect : "none",
+      ...(seg.reason ? { aiReason: seg.reason } : {}),
+      ...(typeof seg.confidence === "number" ? { aiConfidence: seg.confidence } : {}),
     };
     cursor += duration + 0.4;
     return clip;

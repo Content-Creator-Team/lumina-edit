@@ -16,6 +16,10 @@ import { AICopilot } from "./AICopilot";
 import { PropertiesPanel } from "./PropertiesPanel";
 import { CaptionsEditor } from "./CaptionsEditor";
 import { ExportModal } from "./ExportModal";
+import { AIChangesPanel } from "./AIChangesPanel";
+import { EditorCommandPalette, FirstRunOverlay, ShortcutsSheet, cutMarkedRange } from "./EditorCommands";
+import { Command, Keyboard, Wand2 } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 function EditorToolbar({
   videoName,
@@ -30,7 +34,7 @@ function EditorToolbar({
 }) {
   const {
     undo, redo, toggleCopilot, showCopilot, splitClip, currentTime, selectedClipId,
-    setShowExport, toggleProperties, showProperties, toggleCaptions, showCaptions, dirty,
+    setShowExport, toggleProperties, showProperties, dirty,
   } = useEditorStore();
   const canUndo = useCanUndo();
   const canRedo = useCanRedo();
@@ -84,23 +88,21 @@ function EditorToolbar({
         </Tooltip>
         {saveError && <span className="max-w-40 truncate text-[10px] text-destructive">{saveError}</span>}
         <div className="ml-auto flex items-center gap-1">
+          <Button variant="ghost" size="sm" className="h-7 gap-1.5 px-2.5 text-xs text-muted-foreground" onClick={() => useEditorStore.getState().setShowPalette(true)}>
+            <Command className="size-3.5" /> K
+          </Button>
+          <Button variant="ghost" size="icon" className="size-7" aria-label="Keyboard shortcuts" onClick={() => useEditorStore.getState().setShowShortcuts(true)}>
+            <Keyboard className="size-3.5" />
+          </Button>
           <Button
             variant={showProperties ? "secondary" : "ghost"}
             size="sm"
             className="h-7 gap-1.5 px-2.5 text-xs"
             onClick={toggleProperties}
+            aria-pressed={showProperties}
           >
             <SlidersHorizontal className="size-3.5" />
-            Props
-          </Button>
-          <Button
-            variant={showCaptions ? "secondary" : "ghost"}
-            size="sm"
-            className="h-7 gap-1.5 px-2.5 text-xs"
-            onClick={toggleCaptions}
-          >
-            <Captions className="size-3.5" />
-            Captions
+            Panel
           </Button>
           <Button
             variant={showCopilot ? "secondary" : "ghost"}
@@ -123,8 +125,8 @@ function EditorToolbar({
 
 export function EditorWorkspace({ videoId }: { videoId: string }) {
   const {
-    init, showCopilot, showProperties, showCaptions,
-    undo, redo, splitClip, currentTime, selectedClipId,
+    init, showCopilot, showProperties,
+    undo, redo, splitClip,
     tracks, planId, dirty, markClean,
   } = useEditorStore();
   const queryClient = useQueryClient();
@@ -166,22 +168,32 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
 
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const tag = (e.target as HTMLElement).tagName;
-      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT") return;
-      if ((e.metaKey || e.ctrlKey) && e.key === "s") {
-        e.preventDefault();
-        if (dirty) saveMut.mutate();
-        return;
-      }
-      if ((e.metaKey || e.ctrlKey) && e.key === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); }
-      if ((e.key === "s" || e.key === "S") && selectedClipId && !e.metaKey && !e.ctrlKey) {
-        e.preventDefault();
-        splitClip(selectedClipId, currentTime);
+      const el = e.target as HTMLElement;
+      const tag = el.tagName;
+      if (tag === "INPUT" || tag === "TEXTAREA" || tag === "SELECT" || el.isContentEditable) return;
+      const st = useEditorStore.getState();
+      const mod = e.metaKey || e.ctrlKey;
+      if (mod && e.key.toLowerCase() === "k") { e.preventDefault(); st.setShowPalette(!st.showPalette); return; }
+      if (mod && e.key.toLowerCase() === "s") { e.preventDefault(); if (st.dirty) saveMut.mutate(); return; }
+      if (mod && e.key.toLowerCase() === "z") { e.preventDefault(); e.shiftKey ? redo() : undo(); return; }
+      if (mod || e.altKey) return;
+      switch (e.key) {
+        case " ": case "k": case "K": e.preventDefault(); st.setPlaying(!st.playing); break;
+        case "j": case "J": st.setPlaying(false); st.setCurrentTime(st.currentTime - 5); break;
+        case "l": case "L": if (st.playing) st.setCurrentTime(st.currentTime + 5); else st.setPlaying(true); break;
+        case "i": case "I": st.setMarkIn(st.currentTime); break;
+        case "o": case "O": st.setMarkOut(st.currentTime); break;
+        case "x": case "X": cutMarkedRange(); break;
+        case "b": case "B": st.toggleCompare(); break;
+        case "?": st.setShowShortcuts(true); break;
+        case "s": case "S":
+          if (st.selectedClipId) { e.preventDefault(); splitClip(st.selectedClipId, st.currentTime); }
+          break;
       }
     };
     window.addEventListener("keydown", onKey);
     return () => window.removeEventListener("keydown", onKey);
-  }, [undo, redo, splitClip, currentTime, selectedClipId, dirty, saveMut]);
+  }, [undo, redo, splitClip, saveMut]);
 
   if (videoQ.isLoading) {
     return <div className="flex flex-1 items-center justify-center"><Loader2 className="size-6 animate-spin text-muted-foreground" /></div>;
@@ -215,16 +227,18 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
               <span className="text-sm text-muted-foreground">Loading edit plan…</span>
             </div>
           ) : (
-            <PreviewCanvas className="min-h-0 flex-1" />
+            <PreviewCanvas className="min-h-0 flex-1" playbackUrl={videoQ.data.playback_url ?? null} />
           )}
         </div>
-        {showProperties && <PropertiesPanel />}
-        {showCaptions && <CaptionsEditor />}
+        {showProperties && <RightSidebar plan={planQ.data} />}
         {showCopilot && <AICopilot />}
+        <FirstRunOverlay videoId={videoId} editCount={planQ.data?.segments.length ?? 0} />
       </div>
       <div className="surface-card relative m-2 shrink-0 overflow-y-auto rounded-xl" style={{ maxHeight: "40vh", minHeight: 180 }}>
         <Timeline />
       </div>
+      <EditorCommandPalette onSave={() => saveMut.mutate()} />
+      <ShortcutsSheet />
       <ExportModal
         onBeforeExport={async () => {
           if (dirty && planId && planQ.data) {
@@ -236,5 +250,40 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
         }}
       />
     </>
+  );
+}
+
+function RightSidebar({ plan }: { plan: import("@/lib/api-types").EditPlan | undefined }) {
+  const { rightTab, setRightTab } = useEditorStore();
+  const tabs = [
+    { key: "ai", label: "AI edits", icon: Wand2 },
+    { key: "properties", label: "Properties", icon: SlidersHorizontal },
+    { key: "captions", label: "Captions", icon: Captions },
+  ] as const;
+  return (
+    <aside aria-label="Editor side panel" className="surface-card flex w-80 shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
+      <div role="tablist" aria-label="Side panel" className="flex shrink-0 gap-1 border-b border-border p-1.5">
+        {tabs.map((t) => (
+          <button
+            key={t.key}
+            role="tab"
+            aria-selected={rightTab === t.key}
+            onClick={() => setRightTab(t.key)}
+            className={cn(
+              "flex flex-1 items-center justify-center gap-1 rounded-md px-2 py-1.5 text-xs focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              rightTab === t.key ? "bg-primary/15 font-medium text-foreground" : "text-muted-foreground hover:bg-accent",
+            )}
+          >
+            <t.icon className="size-3.5" aria-hidden="true" />
+            {t.label}
+          </button>
+        ))}
+      </div>
+      <div className="sidebar-embed flex min-h-0 flex-1 flex-col overflow-y-auto">
+        {rightTab === "ai" && <AIChangesPanel plan={plan} />}
+        {rightTab === "properties" && <PropertiesPanel />}
+        {rightTab === "captions" && <CaptionsEditor />}
+      </div>
+    </aside>
   );
 }

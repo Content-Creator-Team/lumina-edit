@@ -30,7 +30,14 @@ export interface Clip {
   fadeIn?: number;
   fadeOut?: number;
   effect?: "none" | "fade" | "dissolve" | "zoom_in" | "zoom_out";
+  /** Reason the AI gave for this edit, copied from the plan segment. */
+  aiReason?: string;
+  /** Confidence 0–1 reported by the backend; absent when not provided. */
+  aiConfidence?: number;
 }
+
+export type AiDecision = "accepted" | "rejected";
+export type RightTab = "ai" | "properties" | "captions";
 
 export interface Track {
   id: string;
@@ -61,6 +68,13 @@ interface EditorState {
   dirty: boolean;
   past: Array<{ tracks: Track[]; duration: number }>;
   future: Array<{ tracks: Track[]; duration: number }>;
+  rightTab: RightTab;
+  aiDecisions: Record<string, AiDecision>;
+  showPalette: boolean;
+  showShortcuts: boolean;
+  compareOriginal: boolean;
+  markIn: number | null;
+  markOut: number | null;
 }
 
 interface EditorActions {
@@ -91,6 +105,16 @@ interface EditorActions {
   deleteClip: (clipId: string) => void;
   splitClip: (clipId: string, splitAt: number) => void;
   cutRanges: (ranges: Array<{ start: number; end: number }>) => void;
+
+  setRightTab: (tab: RightTab) => void;
+  setAiDecision: (segmentIds: string[], decision: AiDecision | null) => void;
+  /** Re-insert a clip that keeps its own id (used to restore a cut AI segment). */
+  restoreClip: (trackId: string, clip: Clip) => void;
+  setShowPalette: (open: boolean) => void;
+  setShowShortcuts: (open: boolean) => void;
+  toggleCompare: () => void;
+  setMarkIn: (t: number | null) => void;
+  setMarkOut: (t: number | null) => void;
 }
 
 export type EditorStore = EditorState & EditorActions;
@@ -177,6 +201,13 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
   dirty: false,
   past: [],
   future: [],
+  rightTab: "ai",
+  aiDecisions: {},
+  showPalette: false,
+  showShortcuts: false,
+  compareOriginal: false,
+  markIn: null,
+  markOut: null,
 
   init: (videoId, tracks, duration, planId = null) =>
     set({
@@ -189,6 +220,9 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
       past: [],
       future: [],
       dirty: false,
+      aiDecisions: {},
+      markIn: null,
+      markOut: null,
     }),
 
   setCurrentTime: (t) => set({ currentTime: Math.max(0, Math.min(t, get().duration)) }),
@@ -332,6 +366,36 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
 
   cutRanges: (ranges) =>
     set((s) => withHistory(s, { tracks: applyCutRanges(s.tracks, ranges) })),
+
+  setRightTab: (tab) => set({ rightTab: tab, showProperties: true }),
+  setAiDecision: (segmentIds, decision) =>
+    set((s) => {
+      const next = { ...s.aiDecisions };
+      for (const id of segmentIds) {
+        if (decision) next[id] = decision;
+        else delete next[id];
+      }
+      return { aiDecisions: next };
+    }),
+  restoreClip: (trackId, clip) =>
+    set((s) => {
+      const exists = s.tracks.some((t) => t.clips.some((c) => c.id === clip.id));
+      if (exists) return s;
+      const hasTrack = s.tracks.some((t) => t.id === trackId);
+      const tracks = hasTrack
+        ? s.tracks.map((t) => (t.id === trackId ? { ...t, clips: [...t.clips, { ...clip, trackId }] } : t))
+        : [
+            ...s.tracks,
+            { id: trackId, type: clip.type, name: "Video 1", muted: false, locked: false, visible: true, clips: [{ ...clip, trackId }] },
+          ];
+      const end = clip.startTime + clip.duration;
+      return withHistory(s, { tracks, duration: Math.max(s.duration, end) });
+    }),
+  setShowPalette: (open) => set({ showPalette: open }),
+  setShowShortcuts: (open) => set({ showShortcuts: open }),
+  toggleCompare: () => set((s) => ({ compareOriginal: !s.compareOriginal })),
+  setMarkIn: (t) => set({ markIn: t }),
+  setMarkOut: (t) => set({ markOut: t }),
 }));
 
 export const useCanUndo = () => useEditorStore((s) => s.past.length > 0);

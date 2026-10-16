@@ -50,6 +50,8 @@ function segment(
     scene_id: sceneId ?? null,
     thumbnail_url: null,
     reason: action === "cut" ? "Low energy / repeated point" : "Strongest delivery of this beat",
+    // Demo-only confidence so the review-by-confidence UI has something to show.
+    confidence: Math.round((0.52 + ((Math.round(start * 7) % 45) / 100)) * 100) / 100,
   };
 }
 

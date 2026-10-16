@@ -13,7 +13,10 @@ function fmtTC(s: number) {
 }
 
 /** Canvas-based preview player. Renders text/caption clips; video clips show placeholder. */
-export function PreviewCanvas({ className }: { className?: string }) {
+export function PreviewCanvas({ className, playbackUrl }: { className?: string; playbackUrl?: string | null }) {
+  const compare = useEditorStore((st) => st.compareOriginal);
+  const toggleCompare = useEditorStore((st) => st.toggleCompare);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
   const lastRef = useRef<number | null>(null);
@@ -129,6 +132,25 @@ export function PreviewCanvas({ className }: { className?: string }) {
     <div className={cn("flex flex-col items-stretch gap-2 bg-black", className)}>
       <div className="relative flex-1 overflow-hidden bg-black">
         <canvas ref={canvasRef} width={1280} height={720} className="h-full w-full object-contain" />
+        {compare && (
+          <div className="absolute inset-0 flex items-center justify-center bg-black">
+            {playbackUrl ? (
+              <video ref={videoRef} src={playbackUrl} className="h-full w-full object-contain" controls muted />
+            ) : (
+              <p className="max-w-xs text-center text-sm text-muted-foreground">
+                Original footage playback isn't available for this video, so before/after can't be shown.
+              </p>
+            )}
+          </div>
+        )}
+        <button
+          type="button"
+          onClick={toggleCompare}
+          aria-pressed={compare}
+          className="glass-panel absolute top-3 left-3 z-10 rounded-full px-3 py-1 text-xs font-medium text-foreground focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+        >
+          {compare ? "Before · original" : "After · edited"} <span className="text-muted-foreground">(B)</span>
+        </button>
       </div>
       <div className="flex shrink-0 items-center justify-center gap-1.5 pb-2">
         <Button variant="ghost" size="icon" className="size-7" onClick={() => { setCurrentTime(0); setPlaying(false); }}>

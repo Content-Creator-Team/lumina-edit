@@ -1,7 +1,7 @@
 import { useRef, useCallback, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useEditorStore, type Track, type Clip, type TrackType } from "@/lib/editor-store";
-import { Eye, EyeOff, Volume2, VolumeX, Lock, Unlock, Trash2, Plus } from "lucide-react";
+import { Eye, EyeOff, Volume2, VolumeX, Lock, Unlock, Trash2, Plus, Sparkles } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const TRACK_HEIGHT = 48;
@@ -45,19 +45,37 @@ function ClipBlock({
 }) {
   const left = clip.startTime * zoom;
   const width = Math.max(clip.duration * zoom, 4);
+  const decision = useEditorStore((s) => {
+    const sid = clip.id.startsWith("seg_") ? clip.id.slice(4) : null;
+    return sid ? s.aiDecisions[sid] : undefined;
+  });
+  const isAi = clip.id.startsWith("seg_") && (clip.aiReason || clip.aiConfidence !== undefined);
+  const low = clip.aiConfidence !== undefined && clip.aiConfidence < 0.65;
+  const label = clip.text ?? clip.caption ?? clip.type;
+  const tip = isAi
+    ? `AI: ${clip.aiReason ?? "kept by the AI"}${clip.aiConfidence !== undefined ? ` · ${Math.round(clip.aiConfidence * 100)}% confident` : ""}${decision ? ` · ${decision}` : ""}`
+    : label;
   return (
     <div
       className={cn(
-        "absolute top-1 flex h-10 cursor-pointer select-none items-center overflow-hidden rounded border px-1.5 text-[10px] font-medium text-white",
+        "absolute top-1 flex h-10 cursor-pointer select-none items-center gap-1 overflow-hidden rounded border px-1.5 text-[10px] font-medium text-white",
         TRACK_COLORS[clip.type],
         isSelected && "ring-2 ring-white ring-offset-1 ring-offset-background",
+        low && !decision && "outline outline-2 outline-dashed outline-warning",
         trackLocked && "cursor-not-allowed opacity-60"
       )}
       style={{ left, width }}
       onMouseDown={(e) => { if (trackLocked) return; e.stopPropagation(); onSelect(clip.id); onDragStart(e, clip.id); }}
-      title={clip.text ?? clip.caption ?? clip.type}
+      title={tip}
+      aria-label={tip}
     >
-      <span className="truncate">{clip.text ?? clip.caption ?? clip.type}</span>
+      {isAi && (
+        <span className="inline-flex shrink-0 items-center gap-0.5 rounded bg-black/35 px-1 py-px text-[9px]">
+          <Sparkles className="size-2.5" aria-hidden="true" />
+          {decision === "accepted" ? "✓" : clip.aiConfidence !== undefined ? `${Math.round(clip.aiConfidence * 100)}` : "AI"}
+        </span>
+      )}
+      <span className="truncate">{label}</span>
     </div>
   );
 }

@@ -85,6 +85,8 @@ export type PlanSegment = {
   text_overlay?: string | null;
   thumbnail_url?: string | null;
   reason?: string | null;
+  /** Model confidence 0–1, when the backend reports it. */
+  confidence?: number | null;
   order?: number | null;
   brightness?: number | null;
   contrast?: number | null;

@@ -348,3 +348,47 @@
   .page-enter, .analytics-bar, .app-ambient::before, .editor-ambient::before { animation: none; }
   .surface-card:hover { transform: none; }
 }
+
+/* ── App-wide 3D depth ─────────────────────────────────────────── */
+.sidebar-embed > * { width: 100% !important; border-left: 0 !important; flex: 1 1 auto; }
+@keyframes card-rise { from { opacity: 0; transform: perspective(900px) translateY(26px) rotateX(14deg) scale(0.97); } to { opacity: 1; transform: none; } }
+@keyframes head-swing { from { opacity: 0; transform: perspective(1000px) rotateX(-22deg) translateY(-10px); } to { opacity: 1; transform: none; } }
+@keyframes orb-float { 0%,100% { transform: translate3d(0,0,0) rotate(0deg); } 50% { transform: translate3d(0,-26px,40px) rotate(14deg); } }
+@keyframes grid-scroll { from { background-position: 0 0; } to { background-position: 0 64px; } }
+@keyframes pop-in { from { opacity: 0; transform: translateY(18px) scale(0.94) rotateX(18deg); } to { opacity: 1; transform: none; } }
+
+.app-depth { position: fixed; inset: 0; z-index: 0; pointer-events: none; perspective: 900px; overflow: hidden; }
+.app-depth-grid {
+  position: absolute; left: -25%; right: -25%; bottom: -10%; height: 55%;
+  transform: rotateX(68deg); transform-origin: bottom;
+  background-image: linear-gradient(color-mix(in oklab, var(--primary) 18%, transparent) 1px, transparent 1px),
+    linear-gradient(90deg, color-mix(in oklab, var(--primary) 18%, transparent) 1px, transparent 1px);
+  background-size: 64px 64px;
+  mask-image: linear-gradient(to top, black 10%, transparent 85%);
+  animation: grid-scroll 6s linear infinite; opacity: 0.55;
+}
+.app-depth-orb { position: absolute; border-radius: 9999px; filter: blur(2px); opacity: 0.5; animation: orb-float 14s ease-in-out infinite;
+  background: radial-gradient(circle at 30% 30%, color-mix(in oklab, var(--tint-1) 70%, white 10%), transparent 70%); }
+.app-depth-ring { position: absolute; border-radius: 9999px; border: 1px solid color-mix(in oklab, var(--primary) 30%, transparent);
+  animation: orb-float 18s ease-in-out infinite reverse; }
+
+main.page-enter > * > .surface-card, main .surface-card { animation: card-rise 640ms cubic-bezier(0.16, 0.84, 0.32, 1) backwards; }
+main .surface-card:nth-child(2) { animation-delay: 60ms; } main .surface-card:nth-child(3) { animation-delay: 120ms; }
+main .surface-card:nth-child(4) { animation-delay: 180ms; } main .surface-card:nth-child(5) { animation-delay: 240ms; }
+main .surface-card:nth-child(n+6) { animation-delay: 300ms; }
+main h1 { animation: head-swing 700ms cubic-bezier(0.16, 0.84, 0.32, 1) both; transform-origin: top; }
+
+.tilt-3d { transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px)); transform-style: preserve-3d;
+  transition: transform 180ms ease-out, box-shadow 260ms ease, border-color 260ms ease; }
+.tilt-3d::after { content: ""; position: absolute; inset: 0; border-radius: inherit; pointer-events: none;
+  background: radial-gradient(420px circle at var(--mx, 50%) var(--my, 50%), color-mix(in oklab, var(--primary) 16%, transparent), transparent 45%); opacity: var(--glare, 0); transition: opacity 200ms; }
+.surface-card { position: relative; }
+.scene-tilt { animation: head-swing 700ms cubic-bezier(0.16, 0.84, 0.32, 1) both; }
+.ai-change-card { animation: pop-in 420ms cubic-bezier(0.16, 0.84, 0.32, 1) both; }
+.first-run { animation: pop-in 520ms cubic-bezier(0.16, 0.84, 0.32, 1) both; }
+
+@media (prefers-reduced-motion: reduce) {
+  main .surface-card, main h1, .scene-tilt, .ai-change-card, .first-run, .app-depth-grid, .app-depth-orb, .app-depth-ring { animation: none !important; }
+  .tilt-3d { transform: none !important; }
+}
+.surface-card.tilt-3d:hover { transform: perspective(1000px) rotateX(var(--rx, 0deg)) rotateY(var(--ry, 0deg)) translateY(var(--lift, 0px)); }
