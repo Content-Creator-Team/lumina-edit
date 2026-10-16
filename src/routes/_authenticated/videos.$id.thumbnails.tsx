@@ -1,5 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
+import { useDefaultBrandKit } from "@/lib/brand-kit";
 import { ImageIcon, Loader2, RefreshCw } from "lucide-react";
 
 import { ErrorState, LoadingState } from "@/components/app/query-states";
@@ -28,6 +29,7 @@ function ThumbnailStudioPage() {
     queryFn: () => api.listThumbnails(id),
   });
 
+  const kit = useDefaultBrandKit();
   const regen = useMutation({
     mutationFn: () => api.regenerateThumbnails(id, 4),
     onSuccess: () => {
@@ -64,6 +66,14 @@ function ThumbnailStudioPage() {
         </div>
       </div>
 
+      <p className="mt-4 text-sm text-muted-foreground">
+        {kit ? (
+          <>Brand kit “{kit.name}” is applied automatically. <Link to="/brand" className="underline">Edit kit</Link></>
+        ) : (
+          <>No brand kit yet. <Link to="/brand" className="underline">Create one</Link> to add your logo, font and colours to every thumbnail.</>
+        )}
+      </p>
+
       {thumbsQ.isPending && (
         <div className="mt-10 flex justify-center"><Loader2 className="size-5 animate-spin text-muted-foreground" /></div>
       )}
@@ -87,11 +97,25 @@ function ThumbnailStudioPage() {
         <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {thumbsQ.data.map((thumb) => (
             <figure key={thumb.id} className="overflow-hidden rounded-lg border border-border bg-muted/20">
-              <img
-                src={thumb.url}
-                alt={thumb.label ?? "Thumbnail"}
-                className="aspect-video w-full object-cover"
-              />
+              <div className="relative">
+                <img
+                  src={thumb.url}
+                  alt={thumb.label ?? "Thumbnail"}
+                  className="aspect-video w-full object-cover"
+                />
+                {kit && (
+                  <div className="absolute inset-0" style={{ boxShadow: `inset 0 -80px 60px -40px ${kit.secondary_color ?? "#000"}` }}>
+                    <p
+                      className="absolute bottom-3 left-3 max-w-[75%] text-lg leading-tight font-extrabold text-white uppercase [text-shadow:0_2px_6px_rgb(0_0_0/0.6)]"
+                      style={{ fontFamily: `"${kit.font_family ?? "Sora"}", sans-serif` }}
+                    >
+                      {videoTitle(videoQ.data)}
+                    </p>
+                    <span className="absolute top-0 left-0 h-1.5 w-full" style={{ background: kit.primary_color ?? undefined }} />
+                    {kit.logo_url && <img src={kit.logo_url} alt="" className="absolute top-3 right-3 size-9 object-contain" />}
+                  </div>
+                )}
+              </div>
               <figcaption className="flex items-center justify-between gap-2 px-3 py-2 text-xs text-muted-foreground">
                 <span className="truncate">{thumb.label ?? thumb.variant}</span>
                 {thumb.timestamp != null && (
