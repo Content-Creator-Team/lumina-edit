@@ -183,7 +183,7 @@ export function ExportModal({ onBeforeExport }: Props) {
         <DialogFooter>
           <Button variant="ghost" onClick={() => setShowExport(false)}>Cancel</Button>
           <Button
-            disabled={!planId || exportMut.isPending}
+            disabled={!planId || exportMut.isPending || showLowConfWarning}
             onClick={() => exportMut.mutate()}
           >
             {exportMut.isPending ? (
