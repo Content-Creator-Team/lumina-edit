@@ -17,6 +17,7 @@ import { DemoBadge } from "@/components/demo-badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
+import { isDemoMode } from "@/lib/runtime-config";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated")({
