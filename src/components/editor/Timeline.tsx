@@ -216,6 +216,18 @@ export function Timeline() {
           <div className="sticky top-0 z-10 cursor-pointer" style={{ width: totalWidth }}
             onClick={(e) => { const r = e.currentTarget.getBoundingClientRect(); setCurrentTime((e.clientX - r.left) / zoom); }}>
             <TimelineRuler duration={duration} zoom={zoom} />
+            {comments.map((c) => (
+              <button
+                key={c.id}
+                title={`${c.author}: ${c.text}`}
+                aria-label={`Comment at ${fmt(c.time)}: ${c.text}`}
+                onClick={(e) => { e.stopPropagation(); setCurrentTime(c.time); }}
+                className="absolute top-0 z-10 -translate-x-1/2 text-amber-400 hover:text-amber-300 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+                style={{ left: c.time * zoom }}
+              >
+                <MessageSquare className="size-3 fill-current" />
+              </button>
+            ))}
           </div>
           {/* Lanes */}
           <div className="relative" style={{ width: totalWidth }}>
