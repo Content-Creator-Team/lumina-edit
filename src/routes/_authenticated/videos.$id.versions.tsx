@@ -1,14 +1,110 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { History, Info } from "lucide-react";
-import { useState } from "react";
+import { ArrowRight, GitCompareArrows, History, Info } from "lucide-react";
+import { useMemo, useState } from "react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/app/query-states";
 import { StatusBadge } from "@/components/app/status-badge";
 import { Button } from "@/components/ui/button";
 import { editPlansQuery, formatDate, formatTimecode } from "@/lib/queries";
-import type { EditPlan } from "@/lib/api-types";
+import type { EditPlan, PlanSegment } from "@/lib/api-types";
 import { VariantCuts } from "@/components/app/variant-cuts";
+
+/** Segment-level diff between two plan versions: added, removed and changed. */
+function diffPlans(older: EditPlan, newer: EditPlan) {
+  const key = (s: PlanSegment) => `${(s.start_ts ?? s.start).toFixed(1)}-${(s.end_ts ?? s.end).toFixed(1)}`;
+  const oldMap = new Map(older.segments.map((s) => [key(s), s]));
+  const newMap = new Map(newer.segments.map((s) => [key(s), s]));
+  const added = newer.segments.filter((s) => !oldMap.has(key(s)));
+  const removed = older.segments.filter((s) => !newMap.has(key(s)));
+  const changed = newer.segments.filter((s) => {
+    const prev = oldMap.get(key(s));
+    return prev && (prev.action !== s.action || prev.caption !== s.caption);
+  });
+  return { added, removed, changed };
+}
+
+function ComparePlans({ plans }: { plans: EditPlan[] }) {
+  const [aId, setAId] = useState(plans[1]?.id ?? plans[0]!.id);
+  const [bId, setBId] = useState(plans[0]!.id);
+  const a = plans.find((p) => p.id === aId);
+  const b = plans.find((p) => p.id === bId);
+  const diff = useMemo(() => (a && b && a.id !== b.id ? diffPlans(a, b) : null), [a, b]);
+
+  const selectCls = "rounded-md border border-border bg-background px-2 py-1.5 text-xs";
+
+  return (
+    <section aria-labelledby="compare-heading" className="mt-10 rounded-lg border border-border p-4">
+      <h2 id="compare-heading" className="flex items-center gap-2 font-[family-name:var(--font-display)] text-xl">
+        <GitCompareArrows className="size-5 text-primary" aria-hidden="true" />
+        Compare versions
+      </h2>
+      <div className="mt-3 flex flex-wrap items-center gap-2 text-sm">
+        <label className="sr-only" htmlFor="compare-from">Older version</label>
+        <select id="compare-from" className={selectCls} value={aId} onChange={(e) => setAId(e.target.value)}>
+          {plans.map((p) => <option key={p.id} value={p.id}>v{p.version ?? "?"}</option>)}
+        </select>
+        <ArrowRight className="size-4 text-muted-foreground" aria-hidden="true" />
+        <label className="sr-only" htmlFor="compare-to">Newer version</label>
+        <select id="compare-to" className={selectCls} value={bId} onChange={(e) => setBId(e.target.value)}>
+          {plans.map((p) => <option key={p.id} value={p.id}>v{p.version ?? "?"}</option>)}
+        </select>
+      </div>
+      {a?.id === b?.id ? (
+        <p className="mt-3 text-sm text-muted-foreground">Pick two different versions to compare.</p>
+      ) : diff && (
+        <div className="mt-4 space-y-3 text-sm">
+          {diff.added.length === 0 && diff.removed.length === 0 && diff.changed.length === 0 && (
+            <p className="text-muted-foreground">No segment differences between these versions.</p>
+          )}
+          {diff.changed.length > 0 && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Changed ({diff.changed.length})</p>
+              <ul className="mt-1 space-y-1">
+                {diff.changed.map((s) => {
+                  const prev = a!.segments.find((p) => p.id !== s.id && `${(p.start_ts ?? p.start).toFixed(1)}-${(p.end_ts ?? p.end).toFixed(1)}` === `${(s.start_ts ?? s.start).toFixed(1)}-${(s.end_ts ?? s.end).toFixed(1)}`);
+                  return (
+                    <li key={s.id} className="rounded-md border border-border bg-muted/30 px-2 py-1.5 text-xs">
+                      <span className="font-mono text-primary">{formatTimecode(s.start_ts ?? s.start)}</span>{" "}
+                      {prev?.action !== s.action && <span className="font-medium">{prev?.action === "cut" ? "Cut → Kept" : "Kept → Cut"}</span>}
+                      {prev?.caption !== s.caption && <span className="text-muted-foreground"> caption: “{prev?.caption ?? "—"}” → “{s.caption ?? "—"}”</span>}
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          )}
+          {diff.added.length > 0 && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-success">Added ({diff.added.length})</p>
+              <ul className="mt-1 space-y-1">
+                {diff.added.map((s) => (
+                  <li key={s.id} className="rounded-md border border-success/30 bg-success/5 px-2 py-1.5 text-xs">
+                    <span className="font-mono text-primary">{formatTimecode(s.start_ts ?? s.start)}–{formatTimecode(s.end_ts ?? s.end)}</span>{" "}
+                    {s.action === "cut" ? "Cut" : "Keep"} · {s.caption ?? s.reason ?? "—"}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+          {diff.removed.length > 0 && (
+            <div>
+              <p className="text-xs font-medium uppercase tracking-wide text-destructive">Removed ({diff.removed.length})</p>
+              <ul className="mt-1 space-y-1">
+                {diff.removed.map((s) => (
+                  <li key={s.id} className="rounded-md border border-destructive/30 bg-destructive/5 px-2 py-1.5 text-xs">
+                    <span className="font-mono text-primary">{formatTimecode(s.start_ts ?? s.start)}–{formatTimecode(s.end_ts ?? s.end)}</span>{" "}
+                    {s.action === "cut" ? "Cut" : "Keep"} · {s.caption ?? s.reason ?? "—"}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+        </div>
+      )}
+    </section>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/videos/$id/versions")({
   head: () => ({
