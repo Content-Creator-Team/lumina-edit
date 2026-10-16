@@ -132,50 +132,6 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
     }
   };
 
-  // Keyboard review: A accept, R reject, N next pending edit.
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      const el = e.target as HTMLElement;
-      if (["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) || el.isContentEditable) return;
-      if (e.metaKey || e.ctrlKey || e.altKey) return;
-      const k = e.key.toLowerCase();
-      if (k !== "a" && k !== "r" && k !== "n") return;
-      const pending = segments.filter((s) => !aiDecisions[s.id]);
-      const current =
-        segments.find((s) => s.id === focusId) ??
-        pending[0] ??
-        segments[0];
-      if (!current) return;
-      e.preventDefault();
-      if (k === "n") {
-        const next =
-          pending.find((s) => (s.start_ts ?? s.start) > (current.start_ts ?? current.start)) ??
-          pending[0];
-        if (next) {
-          setFocusId(next.id);
-          jump(next);
-          listRef.current
-            ?.querySelector(`[data-seg="${next.id}"]`)
-            ?.scrollIntoView({ block: "nearest" });
-        }
-        return;
-      }
-      if (aiDecisions[current.id]) return; // already decided; N moves on
-      if (k === "a") accept(current);
-      else reject(current);
-      const next = pending.find((s) => s.id !== current.id);
-      if (next) {
-        setFocusId(next.id);
-        jump(next);
-        listRef.current
-          ?.querySelector(`[data-seg="${next.id}"]`)
-          ?.scrollIntoView({ block: "nearest" });
-      }
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  });
-
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="space-y-2 border-b border-border p-3">
