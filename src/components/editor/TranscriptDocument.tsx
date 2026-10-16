@@ -144,6 +144,31 @@ export function TranscriptDocument({ videoId }: { videoId: string }) {
           })}
         </div>
         <span className="text-[11px] text-muted-foreground">{removedCount} word{removedCount === 1 ? "" : "s"} cut</span>
+        {fillers.length > 0 && (
+          <Button
+            size="sm"
+            variant={showFillers ? "secondary" : "outline"}
+            className="h-6 px-2 text-[11px]"
+            aria-pressed={showFillers}
+            onClick={() => setShowFillers((v) => !v)}
+            title="Highlight filler words (um, uh, like…). Click any highlighted word to cut or restore it."
+          >
+            {fillersCut}/{fillers.length} fillers cut
+          </Button>
+        )}
+        {fillers.length > 0 && fillersCut < fillers.length && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-[11px]"
+            onClick={() => {
+              setTouched(true);
+              setDeleted((d) => new Set([...d, ...fillers.filter((k) => !d.has(k))]));
+            }}
+          >
+            Cut all fillers
+          </Button>
+        )}
         <Button size="sm" variant="ghost" className="ml-auto h-6 px-2 text-[11px]" onClick={reset} disabled={!touched}>
           <RotateCcw className="size-3" /> Reset
         </Button>
