@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ApiError, uploadVideoFile } from "@/lib/api-client";
+import { isDemoMode } from "@/lib/runtime-config";
 
 export const Route = createFileRoute("/_authenticated/upload")({
   head: () => ({
@@ -208,6 +209,24 @@ function UploadPage() {
           <AlertTriangle className="mt-0.5 size-4 shrink-0 text-destructive" aria-hidden="true" />
           {error}
         </p>
+      )}
+
+      {isDemoMode() && (
+        <div className="mt-8 rounded-lg border border-border bg-muted/30 p-5">
+          <p className="text-sm font-medium text-foreground">No footage handy?</p>
+          <p className="mt-1 text-xs text-muted-foreground">
+            The demo workspace includes sample videos with transcripts, scenes and an AI edit plan, so you can
+            see the whole editing flow before uploading anything.
+          </p>
+          <div className="mt-3 flex flex-wrap gap-2">
+            <Button size="sm" variant="secondary" onClick={() => void navigate({ to: "/videos/$id", params: { id: "vid-founder" } })}>
+              Open “Ellis &amp; Co — founder story”
+            </Button>
+            <Button size="sm" variant="ghost" onClick={() => void navigate({ to: "/videos/$id", params: { id: "vid-field" } })}>
+              Open “Field report — day 3”
+            </Button>
+          </div>
+        </div>
       )}
     </div>
   );

@@ -1,5 +1,5 @@
 import { BrandMark } from "@/components/landing/site-header";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
@@ -18,21 +18,40 @@ import { PropertiesPanel } from "./PropertiesPanel";
 import { CaptionsEditor } from "./CaptionsEditor";
 import { ExportModal } from "./ExportModal";
 import { AIChangesPanel } from "./AIChangesPanel";
+import { ReviewMiniMap } from "./ReviewMiniMap";
 import { TranscriptDocument } from "./TranscriptDocument";
 import { EditorCommandPalette, FirstRunOverlay, ShortcutsSheet, cutMarkedRange } from "./EditorCommands";
 import { Command, FileText, Keyboard, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
+
+function SavedAgo({ at }: { at: number }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick((n) => n + 1), 5000);
+    return () => clearInterval(id);
+  }, []);
+  const secs = Math.max(0, Math.round((Date.now() - at) / 1000));
+  const label = secs < 5 ? "Saved · just now" : secs < 60 ? `Saved · ${secs}s ago` : `Saved · ${Math.floor(secs / 60)}m ago`;
+  return (
+    <span className="flex items-center gap-1 text-[10px] text-success" aria-live="polite">
+      <span className="inline-block size-1.5 rounded-full bg-success" aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
 
 function EditorToolbar({
   videoName,
   onSave,
   saving,
   saveError,
+  lastSavedAt,
 }: {
   videoName: string;
   onSave: () => void;
   saving: boolean;
   saveError: string | null;
+  lastSavedAt: number | null;
 }) {
   const {
     undo, redo, toggleCopilot, showCopilot, splitClip, currentTime, selectedClipId,
@@ -50,6 +69,7 @@ function EditorToolbar({
         <div className="mx-2 h-4 w-px bg-border" />
         <span className="max-w-48 truncate text-sm">{videoName}</span>
         {dirty && <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] text-warning">Unsaved</span>}
+        {!dirty && lastSavedAt && <SavedAgo at={lastSavedAt} />}
         <div className="mx-2 h-4 w-px bg-border" />
         <Tooltip>
           <TooltipTrigger asChild>
@@ -131,6 +151,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
     tracks, planId, dirty, markClean,
   } = useEditorStore();
   const queryClient = useQueryClient();
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
   const videoQ = useQuery({
     queryKey: ["video", videoId],
@@ -163,6 +184,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
     },
     onSuccess: async () => {
       markClean();
+      setLastSavedAt(Date.now());
       await queryClient.invalidateQueries({ queryKey: ["edit-plan", videoId] });
     },
   });
@@ -219,6 +241,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
         onSave={() => saveMut.mutate()}
         saving={saveMut.isPending}
         saveError={saveMut.isError ? String(saveMut.error) : null}
+        lastSavedAt={lastSavedAt}
       />
       <div className="relative mx-2 flex min-h-0 flex-1 gap-2 overflow-hidden">
         <div className="editor-stage flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-black/80">
@@ -236,6 +259,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
         <FirstRunOverlay videoId={videoId} editCount={planQ.data?.segments.length ?? 0} />
       </div>
       <div className="surface-card relative m-2 shrink-0 overflow-y-auto rounded-xl" style={{ maxHeight: "40vh", minHeight: 180 }}>
+        <ReviewMiniMap plan={planQ.data} />
         <Timeline />
       </div>
       <EditorCommandPalette onSave={() => saveMut.mutate()} />

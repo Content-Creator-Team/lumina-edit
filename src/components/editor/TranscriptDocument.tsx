@@ -11,6 +11,19 @@ import { cn } from "@/lib/utils";
 type Word = { start: number; end: number; text: string };
 type Sentence = { key: string; speaker: string | null; words: Word[]; estimated: boolean };
 
+const FILLER_RE = /^(um+|uh+|er+|erm|ah+|hmm+|like|basically|actually|literally)[.,!?]*$/i;
+
+/** Keys ("si:wi") of filler words, for one-click reviewable removal. */
+function fillerKeys(sentences: Sentence[]): string[] {
+  const keys: string[] = [];
+  sentences.forEach((s, si) => {
+    s.words.forEach((w, wi) => {
+      if (FILLER_RE.test(w.text.trim())) keys.push(`${si}:${wi}`);
+    });
+  });
+  return keys;
+}
+
 function toSentences(segments: TranscriptSegment[]): Sentence[] {
   return segments.map((seg, i) => {
     const start = seg.start ?? seg.start_time ?? 0;
@@ -67,7 +80,10 @@ export function TranscriptDocument({ videoId }: { videoId: string }) {
   const [order, setOrder] = useState<number[]>([]);
   const [deleted, setDeleted] = useState<Set<string>>(new Set());
   const [touched, setTouched] = useState(false);
+  const [showFillers, setShowFillers] = useState(false);
   const dragFrom = useRef<number | null>(null);
+  const fillers = useMemo(() => fillerKeys(sentences), [sentences]);
+  const fillersCut = fillers.filter((k) => deleted.has(k)).length;
 
   useEffect(() => setOrder(sentences.map((_, i) => i)), [sentences]);
 
@@ -128,6 +144,31 @@ export function TranscriptDocument({ videoId }: { videoId: string }) {
           })}
         </div>
         <span className="text-[11px] text-muted-foreground">{removedCount} word{removedCount === 1 ? "" : "s"} cut</span>
+        {fillers.length > 0 && (
+          <Button
+            size="sm"
+            variant={showFillers ? "secondary" : "outline"}
+            className="h-6 px-2 text-[11px]"
+            aria-pressed={showFillers}
+            onClick={() => setShowFillers((v) => !v)}
+            title="Highlight filler words (um, uh, like…). Click any highlighted word to cut or restore it."
+          >
+            {fillersCut}/{fillers.length} fillers cut
+          </Button>
+        )}
+        {fillers.length > 0 && fillersCut < fillers.length && (
+          <Button
+            size="sm"
+            variant="outline"
+            className="h-6 px-2 text-[11px]"
+            onClick={() => {
+              setTouched(true);
+              setDeleted((d) => new Set([...d, ...fillers.filter((k) => !d.has(k))]));
+            }}
+          >
+            Cut all fillers
+          </Button>
+        )}
         <Button size="sm" variant="ghost" className="ml-auto h-6 px-2 text-[11px]" onClick={reset} disabled={!touched}>
           <RotateCcw className="size-3" /> Reset
         </Button>
@@ -169,6 +210,7 @@ export function TranscriptDocument({ videoId }: { videoId: string }) {
                 {s.words.map((w, wi) => {
                   const key = `${si}:${wi}`;
                   const cut = deleted.has(key);
+                  const isFiller = showFillers && FILLER_RE.test(w.text.trim());
                   if (showOriginal)
                     return <span key={key} className={cn(cut && "bg-destructive/15")}>{w.text} </span>;
                   return (
@@ -176,10 +218,11 @@ export function TranscriptDocument({ videoId }: { videoId: string }) {
                       key={key}
                       onClick={() => toggleWord(key)}
                       aria-pressed={cut}
-                      aria-label={`${cut ? "Restore" : "Cut"} “${w.text}”`}
+                      aria-label={`${cut ? "Restore" : "Cut"} “${w.text}”${isFiller ? " (filler word)" : ""}`}
                       className={cn(
                         "rounded px-px focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                         cut ? "text-muted-foreground line-through decoration-destructive decoration-2" : "hover:bg-destructive/10",
+                        isFiller && !cut && "bg-warning/15 underline decoration-warning decoration-dotted",
                       )}
                     >
                       {w.text}

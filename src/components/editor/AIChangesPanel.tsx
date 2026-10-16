@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Check, CircleAlert, Scissors, Sparkles, Star, Undo2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -26,11 +26,50 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
   const { aiDecisions, setAiDecision, deleteClip, restoreClip, tracks, selectClip, setCurrentTime } =
     useEditorStore();
   const [filter, setFilter] = useState<Filter>("all");
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const segments = useMemo(
     () => [...(plan?.segments ?? [])].sort((a, b) => (a.start_ts ?? a.start) - (b.start_ts ?? b.start)),
     [plan],
   );
+
+  // Keyboard review: A accept, R reject, N next pending edit.
+  // Must run before the early returns below so hook order stays stable.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (["INPUT", "TEXTAREA", "SELECT"].includes(el.tagName) || el.isContentEditable) return;
+      if (e.metaKey || e.ctrlKey || e.altKey) return;
+      const k = e.key.toLowerCase();
+      if (k !== "a" && k !== "r" && k !== "n") return;
+      const pending = segments.filter((s) => !aiDecisions[s.id]);
+      const current = segments.find((s) => s.id === focusId) ?? pending[0] ?? segments[0];
+      if (!current) return;
+      e.preventDefault();
+      if (k === "n") {
+        const next =
+          pending.find((s) => (s.start_ts ?? s.start) > (current.start_ts ?? current.start)) ?? pending[0];
+        if (next) {
+          setFocusId(next.id);
+          jump(next);
+          listRef.current?.querySelector(`[data-seg="${next.id}"]`)?.scrollIntoView({ block: "nearest" });
+        }
+        return;
+      }
+      if (aiDecisions[current.id]) return; // already decided; N moves on
+      if (k === "a") accept(current);
+      else reject(current);
+      const next = pending.find((s) => s.id !== current.id);
+      if (next) {
+        setFocusId(next.id);
+        jump(next);
+        listRef.current?.querySelector(`[data-seg="${next.id}"]`)?.scrollIntoView({ block: "nearest" });
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  });
 
   if (!plan) {
     return <p className="p-4 text-sm text-muted-foreground">No edit plan loaded yet.</p>;
@@ -137,9 +176,14 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
         {!hasConfidence && (
           <p className="text-[10px] text-muted-foreground">The backend didn't report confidence for this plan.</p>
         )}
+        <p className="text-[10px] text-muted-foreground">
+          Keyboard: <kbd className="rounded border border-border bg-muted px-1 font-mono">A</kbd> accept ·{" "}
+          <kbd className="rounded border border-border bg-muted px-1 font-mono">R</kbd> reject ·{" "}
+          <kbd className="rounded border border-border bg-muted px-1 font-mono">N</kbd> next pending
+        </p>
       </div>
 
-      <ul className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
+      <ul ref={listRef} className="min-h-0 flex-1 space-y-2 overflow-y-auto p-3">
         {visible.map((seg) => {
           const cut = isCut(seg);
           const decision = aiDecisions[seg.id];
@@ -147,10 +191,12 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
           return (
             <li
               key={seg.id}
+              data-seg={seg.id}
               className={cn(
                 "ai-change-card rounded-lg border bg-card p-2.5 text-xs",
                 low && !decision ? "border-warning/60" : "border-border",
                 decision === "rejected" && "opacity-70",
+                focusId === seg.id && "ring-2 ring-primary",
               )}
             >
               <button

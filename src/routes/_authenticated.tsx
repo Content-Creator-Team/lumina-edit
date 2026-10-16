@@ -17,6 +17,7 @@ import { DemoBadge } from "@/components/demo-badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/auth-context";
+import { isDemoMode } from "@/lib/runtime-config";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated")({
@@ -105,6 +106,17 @@ function AuthenticatedLayout() {
           </Link>
 
           <DemoBadge className="hidden lg:inline-flex" />
+
+          {isDemoMode() && (
+            <Link
+              to="/pricing"
+              className="hidden items-center gap-1.5 rounded-full border border-border bg-muted/50 px-2.5 py-1 text-[11px] text-muted-foreground hover:text-foreground lg:inline-flex"
+              title="Demo workspace: usage limits from the pricing page aren't enforced here."
+            >
+              <Sparkles className="size-3 text-primary" aria-hidden="true" />
+              Demo plan · unlimited credits
+            </Link>
+          )}
 
           <nav aria-label="Primary" className="flex items-center gap-1">
             {NAV.map((item) => {
