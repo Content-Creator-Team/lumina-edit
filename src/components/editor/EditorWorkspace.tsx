@@ -166,6 +166,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
   } = useEditorStore();
   const queryClient = useQueryClient();
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const videoQ = useQuery({
     queryKey: ["video", videoId],
