@@ -109,7 +109,12 @@ type RequestOptions = {
 
 export async function apiRequest<T>(path: string, options: RequestOptions = {}): Promise<T> {
   if (isDemoMode()) {
-    return demoRequest<T>({ path, method: options.method ?? "GET", body: options.body });
+    return demoRequest<T>({
+      path,
+      method: options.method ?? "GET",
+      body: options.body,
+      ...(options.formData ? { formData: options.formData } : {}),
+    });
   }
 
   if (!isApiConfigured()) {

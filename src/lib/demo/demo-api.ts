@@ -1,3 +1,4 @@
+import type { BrandKit } from "@/lib/api-types";
 import type { EditPlan, PlanPatch, RenderJob, Video } from "../api-types";
 import { DEMO_USER, demoSeeds, type DemoVideoSeed } from "./fixtures";
 
@@ -167,10 +168,12 @@ function advanceRenders(seed: DemoVideoSeed) {
 
 /* ----------------------------------------------------------------- router */
 
-export type DemoRequest = { path: string; method: string; body?: unknown };
+export type DemoRequest = { path: string; method: string; body?: unknown; formData?: FormData };
+
+const demoBrandKits: BrandKit[] = [];
 
 /** Routes a request against the demo store using the real API's paths. */
-export async function demoRequest<T>({ path, method, body }: DemoRequest): Promise<T> {
+export async function demoRequest<T>({ path, method, body, formData }: DemoRequest): Promise<T> {
   await delay(220 + Math.random() * 260);
   const state = db();
   state.seeds.forEach((seed) => {
@@ -230,20 +233,25 @@ export async function demoRequest<T>({ path, method, body }: DemoRequest): Promi
     if (tail === "edit-plans" && method === "GET" && parts.length === 3) return send(seed.plans);
 
     if (tail === "smart-clips" && method === "GET") {
-      return send({
-        video_id: videoId,
-        total_analyzed: seed.video.duration ?? 120,
-        clips: [
-          {
-            start: 5,
-            end: 35,
-            score: 82,
-            hook: "Opening hook",
-            reason: "High energy start",
-            tags: ["hook"],
-          },
-        ],
+      const q = new URLSearchParams(path.split("?")[1] ?? "");
+      const target = Number(q.get("target_duration") ?? 30);
+      const max = Number(q.get("max_clips") ?? 3);
+      const total = seed.video.duration ?? 120;
+      const hooks = ["Bold opening claim", "Surprising reveal", "Direct question to camera", "Fast visual montage"];
+      const clips = Array.from({ length: Math.min(max, 3) }, (_, i) => {
+        const start = Math.min(Math.max(0, total - target), 4 + i * Math.max(8, (total - target) / 3));
+        const score = Math.round(88 - i * 9 - (target > 45 ? 6 : 0));
+        return {
+          start: Number(start.toFixed(1)),
+          end: Number(Math.min(total, start + target).toFixed(1)),
+          score,
+          hook: hooks[(i + Math.round(target / 15)) % hooks.length]!,
+          reason: i === 0 ? "Strongest energy in the first three seconds" : "Clear single idea, ends on a payoff",
+          tags: target <= 30 ? ["short", "9:16"] : ["long", "16:9"],
+          retention: Math.round(Math.min(95, 40 + (60 / target) * 18 - i * 5)),
+        };
       });
+      return send({ video_id: videoId, total_analyzed: total, clips });
     }
     if (tail === "engagement" && method === "GET") {
       return send({
@@ -430,15 +438,42 @@ export async function demoRequest<T>({ path, method, body }: DemoRequest): Promi
   }
 
   if (parts[0] === "brand-kits") {
-    if (method === "GET" && parts.length === 1) return send([]);
+    const kitId = parts[1];
+    if (method === "GET" && parts.length === 1) return send(demoBrandKits);
     if (method === "POST" && parts.length === 1) {
-      return send({
+      const input = (body ?? {}) as Partial<BrandKit>;
+      if (input.is_default) demoBrandKits.forEach((k) => (k.is_default = false));
+      const kit: BrandKit = {
         id: `kit-${Math.random().toString(36).slice(2, 6)}`,
-        name: (body as { name?: string })?.name ?? "Demo kit",
-        primary_color: (body as { primary_color?: string })?.primary_color ?? "#0ea5e9",
-        is_default: true,
+        name: input.name ?? "Brand kit",
+        primary_color: input.primary_color ?? null,
+        secondary_color: input.secondary_color ?? null,
+        accent_color: input.accent_color ?? null,
+        font_family: input.font_family ?? null,
+        caption_preset: input.caption_preset ?? null,
+        logo_url: null,
+        is_default: input.is_default ?? demoBrandKits.length === 0,
         created_at: new Date().toISOString(),
-      });
+      };
+      demoBrandKits.push(kit);
+      return send(kit);
+    }
+    const kit = demoBrandKits.find((k) => k.id === kitId);
+    if (!kit) throw notFound(`Brand kit ${kitId} not found.`);
+    if (method === "PATCH") {
+      const input = (body ?? {}) as Partial<BrandKit>;
+      if (input.is_default) demoBrandKits.forEach((k) => (k.is_default = false));
+      Object.assign(kit, input);
+      return send(kit);
+    }
+    if (method === "DELETE") {
+      demoBrandKits.splice(demoBrandKits.indexOf(kit), 1);
+      return send(undefined);
+    }
+    if (method === "POST" && parts[2] === "logo") {
+      const file = formData?.get("file");
+      if (file instanceof Blob) kit.logo_url = URL.createObjectURL(file);
+      return send(kit);
     }
   }
 
