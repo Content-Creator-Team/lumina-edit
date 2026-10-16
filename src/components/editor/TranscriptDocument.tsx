@@ -80,7 +80,10 @@ export function TranscriptDocument({ videoId }: { videoId: string }) {
   const [order, setOrder] = useState<number[]>([]);
   const [deleted, setDeleted] = useState<Set<string>>(new Set());
   const [touched, setTouched] = useState(false);
+  const [showFillers, setShowFillers] = useState(false);
   const dragFrom = useRef<number | null>(null);
+  const fillers = useMemo(() => fillerKeys(sentences), [sentences]);
+  const fillersCut = fillers.filter((k) => deleted.has(k)).length;
 
   useEffect(() => setOrder(sentences.map((_, i) => i)), [sentences]);
 
