@@ -26,6 +26,8 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
   const { aiDecisions, setAiDecision, deleteClip, restoreClip, tracks, selectClip, setCurrentTime } =
     useEditorStore();
   const [filter, setFilter] = useState<Filter>("all");
+  const [focusId, setFocusId] = useState<string | null>(null);
+  const listRef = useRef<HTMLUListElement>(null);
 
   const segments = useMemo(
     () => [...(plan?.segments ?? [])].sort((a, b) => (a.start_ts ?? a.start) - (b.start_ts ?? b.start)),
