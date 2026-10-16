@@ -1,12 +1,54 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Check, Clapperboard, CircleDashed, Loader2 } from "lucide-react";
+import { Check, Clapperboard, CircleDashed, Loader2, Target } from "lucide-react";
+import { useState } from "react";
 
 import { ErrorState, LoadingState } from "@/components/app/query-states";
 import { StatusBadge } from "@/components/app/status-badge";
 import { Button } from "@/components/ui/button";
 import { LiveProcessingFeed } from "@/components/app/live-processing-feed";
 import { POLL_INTERVAL, formatDate, isTerminal, videoQuery, videoTitle } from "@/lib/queries";
+import { PROJECT_GOALS, getProjectGoal, setProjectGoal, type ProjectGoalId } from "@/lib/editor-extras";
+import { cn } from "@/lib/utils";
+
+/** "What's this for?" — the chosen goal steers revision prompts and AI suggestions. */
+function GoalPicker({ videoId }: { videoId: string }) {
+  const [goal, setGoal] = useState<ProjectGoalId | null>(() => getProjectGoal(videoId));
+  return (
+    <section aria-labelledby="goal-heading" className="mt-8 rounded-xl border border-border p-4">
+      <h2 id="goal-heading" className="flex items-center gap-2 text-sm font-medium text-foreground">
+        <Target className="size-4 text-primary" aria-hidden="true" />
+        What's this video for?
+      </h2>
+      <p className="mt-1 text-xs text-muted-foreground">
+        The AI uses this intent when you ask for revisions. Saved on this device.
+      </p>
+      <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Video goal">
+        {PROJECT_GOALS.map((g) => (
+          <button
+            key={g.id}
+            role="radio"
+            aria-checked={goal === g.id}
+            title={g.hint}
+            onClick={() => {
+              const next = goal === g.id ? null : g.id;
+              setGoal(next);
+              setProjectGoal(videoId, next);
+            }}
+            className={cn(
+              "rounded-full border px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+              goal === g.id
+                ? "border-primary bg-primary/15 font-medium text-foreground"
+                : "border-border text-muted-foreground hover:bg-accent hover:text-foreground",
+            )}
+          >
+            {g.label}
+          </button>
+        ))}
+      </div>
+    </section>
+  );
+}
 
 export const Route = createFileRoute("/_authenticated/videos/$id/")({
   head: () => ({
