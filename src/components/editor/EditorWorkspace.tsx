@@ -1,5 +1,5 @@
 import { BrandMark } from "@/components/landing/site-header";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
 import {
@@ -18,6 +18,7 @@ import { PropertiesPanel } from "./PropertiesPanel";
 import { CaptionsEditor } from "./CaptionsEditor";
 import { ExportModal } from "./ExportModal";
 import { AIChangesPanel } from "./AIChangesPanel";
+import { ReviewMiniMap } from "./ReviewMiniMap";
 import { TranscriptDocument } from "./TranscriptDocument";
 import { EditorCommandPalette, FirstRunOverlay, ShortcutsSheet, cutMarkedRange } from "./EditorCommands";
 import { Command, FileText, Keyboard, Wand2 } from "lucide-react";
