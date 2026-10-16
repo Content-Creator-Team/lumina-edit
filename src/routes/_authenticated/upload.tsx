@@ -7,6 +7,7 @@ import { useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { ApiError, uploadVideoFile } from "@/lib/api-client";
+import { isDemoMode } from "@/lib/runtime-config";
 
 export const Route = createFileRoute("/_authenticated/upload")({
   head: () => ({
