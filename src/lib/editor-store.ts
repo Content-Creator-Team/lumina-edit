@@ -30,7 +30,14 @@ export interface Clip {
   fadeIn?: number;
   fadeOut?: number;
   effect?: "none" | "fade" | "dissolve" | "zoom_in" | "zoom_out";
+  /** Reason the AI gave for this edit, copied from the plan segment. */
+  aiReason?: string;
+  /** Confidence 0–1 reported by the backend; absent when not provided. */
+  aiConfidence?: number;
 }
+
+export type AiDecision = "accepted" | "rejected";
+export type RightTab = "ai" | "properties" | "captions";
 
 export interface Track {
   id: string;
@@ -61,6 +68,13 @@ interface EditorState {
   dirty: boolean;
   past: Array<{ tracks: Track[]; duration: number }>;
   future: Array<{ tracks: Track[]; duration: number }>;
+  rightTab: RightTab;
+  aiDecisions: Record<string, AiDecision>;
+  showPalette: boolean;
+  showShortcuts: boolean;
+  compareOriginal: boolean;
+  markIn: number | null;
+  markOut: number | null;
 }
 
 interface EditorActions {
@@ -91,6 +105,16 @@ interface EditorActions {
   deleteClip: (clipId: string) => void;
   splitClip: (clipId: string, splitAt: number) => void;
   cutRanges: (ranges: Array<{ start: number; end: number }>) => void;
+
+  setRightTab: (tab: RightTab) => void;
+  setAiDecision: (segmentIds: string[], decision: AiDecision | null) => void;
+  /** Re-insert a clip that keeps its own id (used to restore a cut AI segment). */
+  restoreClip: (trackId: string, clip: Clip) => void;
+  setShowPalette: (open: boolean) => void;
+  setShowShortcuts: (open: boolean) => void;
+  toggleCompare: () => void;
+  setMarkIn: (t: number | null) => void;
+  setMarkOut: (t: number | null) => void;
 }
 
 export type EditorStore = EditorState & EditorActions;
