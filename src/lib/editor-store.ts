@@ -201,6 +201,13 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
   dirty: false,
   past: [],
   future: [],
+  rightTab: "ai",
+  aiDecisions: {},
+  showPalette: false,
+  showShortcuts: false,
+  compareOriginal: false,
+  markIn: null,
+  markOut: null,
 
   init: (videoId, tracks, duration, planId = null) =>
     set({
@@ -213,6 +220,9 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
       past: [],
       future: [],
       dirty: false,
+      aiDecisions: {},
+      markIn: null,
+      markOut: null,
     }),
 
   setCurrentTime: (t) => set({ currentTime: Math.max(0, Math.min(t, get().duration)) }),
@@ -356,6 +366,36 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
 
   cutRanges: (ranges) =>
     set((s) => withHistory(s, { tracks: applyCutRanges(s.tracks, ranges) })),
+
+  setRightTab: (tab) => set({ rightTab: tab, showProperties: true }),
+  setAiDecision: (segmentIds, decision) =>
+    set((s) => {
+      const next = { ...s.aiDecisions };
+      for (const id of segmentIds) {
+        if (decision) next[id] = decision;
+        else delete next[id];
+      }
+      return { aiDecisions: next };
+    }),
+  restoreClip: (trackId, clip) =>
+    set((s) => {
+      const exists = s.tracks.some((t) => t.clips.some((c) => c.id === clip.id));
+      if (exists) return s;
+      const hasTrack = s.tracks.some((t) => t.id === trackId);
+      const tracks = hasTrack
+        ? s.tracks.map((t) => (t.id === trackId ? { ...t, clips: [...t.clips, { ...clip, trackId }] } : t))
+        : [
+            ...s.tracks,
+            { id: trackId, type: clip.type, name: "Video 1", muted: false, locked: false, visible: true, clips: [{ ...clip, trackId }] },
+          ];
+      const end = clip.startTime + clip.duration;
+      return withHistory(s, { tracks, duration: Math.max(s.duration, end) });
+    }),
+  setShowPalette: (open) => set({ showPalette: open }),
+  setShowShortcuts: (open) => set({ showShortcuts: open }),
+  toggleCompare: () => set((s) => ({ compareOriginal: !s.compareOriginal })),
+  setMarkIn: (t) => set({ markIn: t }),
+  setMarkOut: (t) => set({ markOut: t }),
 }));
 
 export const useCanUndo = () => useEditorStore((s) => s.past.length > 0);
