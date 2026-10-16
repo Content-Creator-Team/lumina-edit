@@ -24,7 +24,17 @@ export function RevisionPrompt({ videoId, planId, disabled, onRevised }: Props) 
   const [instruction, setInstruction] = useState("");
 
   const revise = useMutation({
-    mutationFn: (text: string) => api.revisePlan(videoId, planId, text),
+    mutationFn: (text: string) => {
+      // Prepend the project goal and learned style preferences so the AI
+      // revises with that intent. Both are stored locally on this device.
+      const goal = goalLabel(getProjectGoal(videoId));
+      const hints = styleMemoryHints();
+      const prefix = [
+        goal ? `This video is a ${goal}.` : null,
+        hints.length > 0 ? `The editor often rejects: ${hints.join(", ")} — avoid those.` : null,
+      ].filter(Boolean).join(" ");
+      return api.revisePlan(videoId, planId, prefix ? `${prefix}\n\n${text}` : text);
+    },
     onSuccess: (plan) => {
       setInstruction("");
       onRevised(plan);
