@@ -1,4 +1,4 @@
-import { BrandMark } from "@/components/landing/site-header";
+import { AppIconBadge } from "@/components/app-icon-badge";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -44,12 +44,8 @@ function VerifyEmailPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-cinema-void px-6 font-[family-name:var(--font-body)] text-cinema-ink">
       <div className="relative w-full max-w-sm text-center">
-        <span
-          aria-hidden="true"
-          className="mx-auto flex size-12 items-center justify-center rounded-xl"
-          style={{ background: "linear-gradient(140deg, var(--primary), var(--primary-deep))" }}
-        />
-        <h1 className="mt-8"><span className="sr-only">REELZOY</span><BrandMark /></h1>
+        <AppIconBadge />
+        <h1 className="sr-only">REELZOY</h1>
 
         {status === "loading" && (
           <div className="mt-8">
