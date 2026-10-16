@@ -66,8 +66,9 @@ interface EditorState {
   showCaptions: boolean;
   showExport: boolean;
   dirty: boolean;
-  past: Array<{ tracks: Track[]; duration: number }>;
-  future: Array<{ tracks: Track[]; duration: number }>;
+  past: Array<{ tracks: Track[]; duration: number; aiDecisions: Record<string, AiDecision> }>;
+  future: Array<{ tracks: Track[]; duration: number; aiDecisions: Record<string, AiDecision> }>;
+  copilotPrompt: string | null;
   rightTab: RightTab;
   aiDecisions: Record<string, AiDecision>;
   showPalette: boolean;
@@ -109,7 +110,9 @@ interface EditorActions {
   setRightTab: (tab: RightTab) => void;
   /** Replace all clips on the first video track (transcript-driven edit). */
   replaceVideoClips: (clips: Array<Omit<Clip, "trackId">>) => void;
-  setAiDecision: (segmentIds: string[], decision: AiDecision | null) => void;
+  /** record=false when the same user action already pushed an undo step. */
+  setAiDecision: (segmentIds: string[], decision: AiDecision | null, record?: boolean) => void;
+  sendCopilotPrompt: (prompt: string | null) => void;
   /** Re-insert a clip that keeps its own id (used to restore a cut AI segment). */
   restoreClip: (trackId: string, clip: Clip) => void;
   setShowPalette: (open: boolean) => void;
@@ -133,7 +136,7 @@ function findClip(tracks: Track[], clipId: string): [Track, Clip] | null {
 }
 
 function snapshot(s: EditorState) {
-  return { tracks: s.tracks, duration: s.duration };
+  return { tracks: s.tracks, duration: s.duration, aiDecisions: s.aiDecisions };
 }
 
 function withHistory(s: EditorState, next: Partial<EditorState>): Partial<EditorState> {
@@ -184,6 +187,17 @@ function applyCutRanges(tracks: Track[], ranges: Array<{ start: number; end: num
   });
 }
 
+const DECISIONS_KEY = (planId: string) => `reelzoy.ai_decisions.${planId}`;
+
+function loadDecisions(planId: string | null): Record<string, AiDecision> {
+  if (!planId || typeof window === "undefined") return {};
+  try {
+    return JSON.parse(localStorage.getItem(DECISIONS_KEY(planId)) ?? "{}") as Record<string, AiDecision>;
+  } catch {
+    return {};
+  }
+}
+
 export const useEditorStore = create<EditorStore>()((set, get) => ({
   videoId: null,
   planId: null,
@@ -210,6 +224,7 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
   compareOriginal: false,
   markIn: null,
   markOut: null,
+  copilotPrompt: null,
 
   init: (videoId, tracks, duration, planId = null) =>
     set({
@@ -222,7 +237,7 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
       past: [],
       future: [],
       dirty: false,
-      aiDecisions: {},
+      aiDecisions: loadDecisions(planId ?? null),
       markIn: null,
       markOut: null,
     }),
@@ -381,15 +396,16 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
       const end = placed.reduce((m, c) => Math.max(m, c.startTime + c.duration), 0);
       return withHistory(s, { tracks, duration: Math.max(end, 1), currentTime: 0 });
     }),
-  setAiDecision: (segmentIds, decision) =>
+  setAiDecision: (segmentIds, decision, record = true) =>
     set((s) => {
       const next = { ...s.aiDecisions };
       for (const id of segmentIds) {
         if (decision) next[id] = decision;
         else delete next[id];
       }
-      return { aiDecisions: next };
+      return record ? withHistory(s, { aiDecisions: next, dirty: s.dirty }) : { aiDecisions: next };
     }),
+  sendCopilotPrompt: (prompt) => set((s) => ({ copilotPrompt: prompt, showCopilot: prompt ? true : s.showCopilot })),
   restoreClip: (trackId, clip) =>
     set((s) => {
       const exists = s.tracks.some((t) => t.clips.some((c) => c.id === clip.id));
@@ -422,3 +438,15 @@ export const useSelectedClip = () =>
     }
     return null;
   });
+
+// Keep review progress across reloads (stored per plan version on this device).
+if (typeof window !== "undefined") {
+  useEditorStore.subscribe((s, prev) => {
+    if (!s.planId || s.aiDecisions === prev.aiDecisions) return;
+    try {
+      localStorage.setItem(DECISIONS_KEY(s.planId), JSON.stringify(s.aiDecisions));
+    } catch {
+      /* storage blocked */
+    }
+  });
+}

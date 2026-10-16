@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Sparkles, Loader2, ChevronRight, Scissors, Wand2, X, Languages, Palette,
@@ -138,6 +138,14 @@ function CommandPanel({ videoId }: { videoId: string }) {
       if (ranges.length > 0) useEditorStore.getState().cutRanges(ranges);
     },
   });
+
+  const pending = useEditorStore((st) => st.copilotPrompt);
+  useEffect(() => {
+    if (!pending || mutation.isPending) return;
+    setInstr(pending);
+    useEditorStore.getState().sendCopilotPrompt(null);
+    mutation.mutate(pending);
+  }, [pending]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const QUICK = [
     "Remove all silences longer than 2 seconds",
@@ -350,7 +358,7 @@ export function AICopilot() {
           <X className="size-3.5" />
         </Button>
       </div>
-      <Tabs defaultValue="command" className="flex flex-1 flex-col overflow-hidden">
+      <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col overflow-hidden">
         <TabsList className="mx-2 mt-2 grid h-auto grid-cols-3 gap-0.5">
           <TabsTrigger value="command" className="text-[10px]">Command</TabsTrigger>
           <TabsTrigger value="silence" className="text-[10px]">Silence</TabsTrigger>

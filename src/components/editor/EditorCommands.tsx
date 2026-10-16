@@ -57,13 +57,10 @@ export function EditorCommandPalette({ onSave }: { onSave: () => void }) {
             <CommandItem
               value={query}
               onSelect={() =>
-                run(() => {
-                  if (!st.showCopilot) st.toggleCopilot();
-                  void navigator.clipboard?.writeText(query.slice(1)).catch(() => undefined);
-                })
+                run(() => st.sendCopilotPrompt(query.slice(1).trim()))
               }
             >
-              <Sparkles /> Open Copilot with “{query.slice(1)}” (copied — paste to send)
+              <Sparkles /> Send to AI Copilot: “{query.slice(1)}”
             </CommandItem>
           </CommandGroup>
         )}
