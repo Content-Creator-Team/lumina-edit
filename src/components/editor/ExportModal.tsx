@@ -89,7 +89,7 @@ export function ExportModal({ onBeforeExport }: Props) {
   });
 
   return (
-    <Dialog open={showExport} onOpenChange={setShowExport}>
+    <Dialog open={showExport} onOpenChange={(open) => { setShowExport(open); if (!open) setAckLowConf(false); }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Export</DialogTitle>
@@ -146,6 +146,34 @@ export function ExportModal({ onBeforeExport }: Props) {
             <input type="checkbox" checked={preferFaces} onChange={(e) => setPreferFaces(e.target.checked)} />
             Prefer face-centered reframing
           </label>
+
+          {showLowConfWarning && (
+            <div role="alert" className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
+              <p className="font-medium text-foreground">
+                {unreviewedLow.length} low-confidence edit{unreviewedLow.length === 1 ? "" : "s"} not reviewed
+              </p>
+              <p className="mt-0.5 text-muted-foreground">
+                The AI wasn't sure about these. Review them first, or export anyway.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  className="h-7 text-[11px]"
+                  onClick={() => {
+                    setShowExport(false);
+                    if (!showProperties) toggleProperties();
+                    setRightTab("ai");
+                  }}
+                >
+                  Review them
+                </Button>
+                <Button size="sm" variant="ghost" className="h-7 text-[11px]" onClick={() => setAckLowConf(true)}>
+                  Export anyway
+                </Button>
+              </div>
+            </div>
+          )}
 
           {exportMut.isError && (
             <p className="text-xs text-red-400">{String(exportMut.error)}</p>
