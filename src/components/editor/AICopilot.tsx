@@ -345,6 +345,11 @@ function BrandKitPanel() {
 
 export function AICopilot() {
   const { videoId, toggleCopilot } = useEditorStore();
+  const pending = useEditorStore((st) => st.copilotPrompt);
+  const [tab, setTab] = useState("command");
+  useEffect(() => {
+    if (pending) setTab("command");
+  }, [pending]);
   if (!videoId) return null;
 
   return (

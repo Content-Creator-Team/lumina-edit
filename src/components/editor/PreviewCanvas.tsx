@@ -19,6 +19,22 @@ export function PreviewCanvas({ className, playbackUrl }: { className?: string; 
   const compare = useEditorStore((st) => st.compareOriginal);
   const toggleCompare = useEditorStore((st) => st.toggleCompare);
   const videoRef = useRef<HTMLVideoElement>(null);
+  // Source time of the original footage under the playhead, so before/after compares the same moment.
+  const sourceTime = useEditorStore((st) => {
+    for (const t of st.tracks) {
+      if (t.type !== "video") continue;
+      for (const c of t.clips) {
+        if (st.currentTime >= c.startTime && st.currentTime < c.startTime + c.duration)
+          return (c.sourceStart ?? 0) + (c.trimIn ?? 0) + (st.currentTime - c.startTime);
+      }
+    }
+    return null;
+  });
+  useEffect(() => {
+    const v = videoRef.current;
+    if (!compare || !v || sourceTime === null) return;
+    if (Math.abs(v.currentTime - sourceTime) > 0.35) v.currentTime = sourceTime;
+  }, [compare, sourceTime]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
   const lastRef = useRef<number | null>(null);
@@ -150,7 +166,7 @@ export function PreviewCanvas({ className, playbackUrl }: { className?: string; 
         {compare && (
           <div className="absolute inset-0 flex items-center justify-center bg-black">
             {playbackUrl ? (
-              <video ref={videoRef} src={playbackUrl} className="h-full w-full object-contain" controls muted />
+              <video ref={videoRef} src={playbackUrl} className="h-full w-full object-contain" muted playsInline preload="auto" aria-label="Original footage at the playhead" />
             ) : (
               <p className="max-w-xs text-center text-sm text-muted-foreground">
                 Original footage playback isn't available for this video, so before/after can't be shown.
