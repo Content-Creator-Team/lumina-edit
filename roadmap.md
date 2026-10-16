@@ -8,11 +8,11 @@
 
 ## Batch 2 (next)
 - [x] Edit via transcript
-- [ ] Live processing screen
+- [x] Live processing screen
 - [x] Multiple versions side by side with hook score
 - [x] Brand kit (fonts, colours, logo → captions + thumbnails)
-- [ ] Timestamped comments + client approval link
-- [ ] Fixes from review notes: undo/decision sync, save decisions, direct /prompt to Copilot, synced before/after video, calmer tilt on work screens
+- [x] Timestamped comments (device-only) ; client approval link blocked: needs backend share-link endpoint
+- [x] Fixes from review notes
 
 ## Open
 - Real pricing figures (waiting on user)

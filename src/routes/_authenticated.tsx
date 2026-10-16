@@ -54,7 +54,9 @@ function AuthenticatedLayout() {
       el.style.setProperty("--glare", "0");
     };
     const onMove = (e: PointerEvent) => {
-      const card = (e.target as HTMLElement | null)?.closest?.<HTMLElement>("main .surface-card");
+      // Tilt only showcase cards; forms, tables and inputs stay still.
+      const hit = (e.target as HTMLElement | null)?.closest?.<HTMLElement>("main .surface-card");
+      const card = hit && !hit.matches("form, :has(input, textarea, select, table)") ? hit : null;
       if (current && current !== card) reset(current);
       current = card ?? null;
       if (!card) return;
@@ -62,7 +64,7 @@ function AuthenticatedLayout() {
       const r = card.getBoundingClientRect();
       const x = (e.clientX - r.left) / r.width;
       const y = (e.clientY - r.top) / r.height;
-      const strength = r.width > 600 ? 2.5 : 6;
+      const strength = r.width > 600 ? 1.5 : 4;
       card.style.setProperty("--ry", `${(x - 0.5) * strength}deg`);
       card.style.setProperty("--rx", `${(0.5 - y) * strength}deg`);
       card.style.setProperty("--lift", "-3px");

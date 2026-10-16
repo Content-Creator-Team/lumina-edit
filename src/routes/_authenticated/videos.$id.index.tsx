@@ -5,6 +5,7 @@ import { Check, Clapperboard, CircleDashed, Loader2 } from "lucide-react";
 import { ErrorState, LoadingState } from "@/components/app/query-states";
 import { StatusBadge } from "@/components/app/status-badge";
 import { Button } from "@/components/ui/button";
+import { LiveProcessingFeed } from "@/components/app/live-processing-feed";
 import { POLL_INTERVAL, formatDate, isTerminal, videoQuery, videoTitle } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/videos/$id/")({
@@ -124,6 +125,8 @@ function VideoDetailPage() {
           );
         })}
       </ol>
+
+      <LiveProcessingFeed videoId={id} live={!isTerminal(video.status)} />
 
       <div className="mt-8 flex flex-wrap gap-3">
         {planReady ? (

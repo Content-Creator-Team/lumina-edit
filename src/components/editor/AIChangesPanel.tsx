@@ -56,15 +56,17 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
 
   const accept = (seg: PlanSegment) => {
     // Undo a previous reject so the timeline matches the AI proposal again.
-    if (aiDecisions[seg.id] === "rejected") revert(seg);
-    setAiDecision([seg.id], "accepted");
+    if (aiDecisions[seg.id] === "rejected") {
+      revert(seg);
+      setAiDecision([seg.id], "accepted", false);
+    } else setAiDecision([seg.id], "accepted");
   };
 
   const reject = (seg: PlanSegment) => {
     if (aiDecisions[seg.id] === "rejected") return;
     if (isCut(seg)) restoreClip("vt1", clipForSegment(seg, timelineEnd() + 0.4));
     else deleteClip(clipIdForSegment(seg.id));
-    setAiDecision([seg.id], "rejected");
+    setAiDecision([seg.id], "rejected", false);
   };
 
   const revert = (seg: PlanSegment) => {
@@ -73,8 +75,10 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
   };
 
   const undoDecision = (seg: PlanSegment) => {
-    if (aiDecisions[seg.id] === "rejected") revert(seg);
-    setAiDecision([seg.id], null);
+    if (aiDecisions[seg.id] === "rejected") {
+      revert(seg);
+      setAiDecision([seg.id], null, false);
+    } else setAiDecision([seg.id], null);
   };
 
   const acceptAll = (kind: "keep" | "cut") => {
@@ -176,6 +180,20 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
                 {seg.reason ?? "The AI didn't give a reason for this edit."}
               </p>
               {seg.caption && <p className="mt-1 truncate italic">“{seg.caption}”</p>}
+              {cut && decision === "rejected" && (
+                <button
+                  className="mt-1 text-[11px] text-primary underline-offset-2 hover:underline"
+                  onClick={() =>
+                    useEditorStore
+                      .getState()
+                      .sendCopilotPrompt(
+                        `Suggest a different cut between ${formatTimecode(seg.start_ts ?? seg.start)} and ${formatTimecode(seg.end_ts ?? seg.end)}`,
+                      )
+                  }
+                >
+                  Ask the AI for a different cut here
+                </button>
+              )}
               <div className="mt-2 flex items-center gap-1">
                 {decision ? (
                   <>
@@ -194,11 +212,18 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
                     <Button size="sm" variant="ghost" className="h-6 px-2 text-[11px]" onClick={() => reject(seg)}>
                       <X className="size-3" /> Reject
                     </Button>
-                    {!cut && (
-                      <Button size="sm" variant="ghost" className="ml-auto h-6 px-2 text-[11px]" onClick={() => jump(seg)}>
-                        Tweak
-                      </Button>
-                    )}
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="ml-auto h-6 px-2 text-[11px]"
+                      title={cut ? "Bring this part back so you can trim it yourself" : "Select this clip to adjust it"}
+                      onClick={() => {
+                        if (cut) reject(seg);
+                        setTimeout(() => jump(seg), 0);
+                      }}
+                    >
+                      Tweak
+                    </Button>
                   </>
                 )}
               </div>
