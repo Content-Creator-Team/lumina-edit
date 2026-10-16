@@ -1,4 +1,4 @@
-import { BrandMark } from "@/components/landing/site-header";
+import { AppIconBadge } from "@/components/app-icon-badge";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Loader2, Mail } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
@@ -49,13 +49,9 @@ function ForgotPasswordPage() {
       />
       <div className="relative w-full max-w-sm">
         <div className="text-center">
-          <span
-            aria-hidden="true"
-            className="mx-auto flex size-12 items-center justify-center rounded-xl"
-            style={{ background: "linear-gradient(140deg, var(--primary), var(--primary-deep))" }}
-          />
-          <h1 className="mt-8"><span className="sr-only">REELZOY</span><BrandMark /></h1>
-          <p className="mt-2 text-sm text-cinema-muted">
+          <AppIconBadge />
+          <h1 className="sr-only">REELZOY</h1>
+          <p className="mt-4 text-sm text-cinema-muted">
             {sent ? "Email sent." : "Reset your password."}
           </p>
         </div>
