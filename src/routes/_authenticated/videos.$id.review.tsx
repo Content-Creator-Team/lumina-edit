@@ -20,6 +20,8 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { PlanTimeline } from "@/components/app/plan-timeline";
 import { ErrorState, LoadingState } from "@/components/app/query-states";
 import { RevisionPrompt } from "@/components/app/revision-prompt";
+import { ReviewComments } from "@/components/app/review-comments";
+import { useAuth } from "@/lib/auth-context";
 import { StatusBadge } from "@/components/app/status-badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -70,6 +72,7 @@ function ReviewPage() {
   const queryClient = useQueryClient();
   const posthog = usePostHog();
   const videoRef = useRef<HTMLVideoElement>(null);
+  const { user: authUser } = useAuth();
   const timelineRef = useRef<HTMLDivElement>(null);
   const activePointerRef = useRef<number | null>(null);
 
@@ -788,6 +791,16 @@ function ReviewPage() {
               Save or discard your edits before requesting a revision.
             </p>
           )}
+
+          <ReviewComments
+            videoId={id}
+            planId={plan.data.id}
+            currentTime={currentTime}
+            author={authUser?.name ?? authUser?.email ?? "You"}
+            disabled={isDirty}
+            onSeek={seek}
+            onRevised={applyRevision}
+          />
         </div>
 
         {/* ── Transcript sidebar ── */}
