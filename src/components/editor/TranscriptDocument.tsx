@@ -210,6 +210,7 @@ export function TranscriptDocument({ videoId }: { videoId: string }) {
                 {s.words.map((w, wi) => {
                   const key = `${si}:${wi}`;
                   const cut = deleted.has(key);
+                  const isFiller = showFillers && FILLER_RE.test(w.text.trim());
                   if (showOriginal)
                     return <span key={key} className={cn(cut && "bg-destructive/15")}>{w.text} </span>;
                   return (
@@ -217,10 +218,11 @@ export function TranscriptDocument({ videoId }: { videoId: string }) {
                       key={key}
                       onClick={() => toggleWord(key)}
                       aria-pressed={cut}
-                      aria-label={`${cut ? "Restore" : "Cut"} “${w.text}”`}
+                      aria-label={`${cut ? "Restore" : "Cut"} “${w.text}”${isFiller ? " (filler word)" : ""}`}
                       className={cn(
                         "rounded px-px focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
                         cut ? "text-muted-foreground line-through decoration-destructive decoration-2" : "hover:bg-destructive/10",
+                        isFiller && !cut && "bg-warning/15 underline decoration-warning decoration-dotted",
                       )}
                     >
                       {w.text}
