@@ -22,6 +22,8 @@ export const SHORTCUTS: Array<[string, string]> = [
   ["⌘/Ctrl + Z", "Undo (⇧ to redo)"],
   ["⌘/Ctrl + S", "Save timeline to the edit plan"],
   ["⌘/Ctrl + K", "Command menu"],
+  ["A / R", "Accept / reject the focused AI edit (AI edits tab)"],
+  ["N", "Jump to the next pending AI edit"],
   ["?", "Show this sheet"],
 ];
 
