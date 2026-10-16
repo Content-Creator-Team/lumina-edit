@@ -22,7 +22,7 @@ export function DemoReel() {
     return () => clearInterval(t);
   }, [playing]);
 
-  const s = SCENES[i];
+  const s = SCENES[i] ?? SCENES[0]!;
 
   return (
     <section className="mx-auto w-full max-w-6xl px-6 py-20" aria-labelledby="demo-heading">
