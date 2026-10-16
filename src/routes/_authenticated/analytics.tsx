@@ -29,8 +29,8 @@ function AnalyticsPage() {
   const videos = q.data;
   const by: Record<string, number> = {};
   for (const v of videos) by[String(v.status).toLowerCase()] = (by[String(v.status).toLowerCase()] ?? 0) + 1;
-  const done = (by.complete ?? 0) + (by.approved ?? 0) + (by.plan_ready ?? 0) + (by.ready ?? 0);
-  const failed = by.failed ?? 0;
+  const done = (by["complete"] ?? 0) + (by["approved"] ?? 0) + (by["plan_ready"] ?? 0) + (by["ready"] ?? 0);
+  const failed = by["failed"] ?? 0;
   const minutes = Math.round(videos.reduce((a, v) => a + (v.duration ?? 0), 0) / 60);
 
   // Uploads per day, last 14 days, from real created_at values.
