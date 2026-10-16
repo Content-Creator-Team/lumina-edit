@@ -151,6 +151,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
     tracks, planId, dirty, markClean,
   } = useEditorStore();
   const queryClient = useQueryClient();
+  const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
 
   const videoQ = useQuery({
     queryKey: ["video", videoId],
@@ -183,6 +184,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
     },
     onSuccess: async () => {
       markClean();
+      setLastSavedAt(Date.now());
       await queryClient.invalidateQueries({ queryKey: ["edit-plan", videoId] });
     },
   });
