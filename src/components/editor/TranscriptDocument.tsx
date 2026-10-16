@@ -11,6 +11,19 @@ import { cn } from "@/lib/utils";
 type Word = { start: number; end: number; text: string };
 type Sentence = { key: string; speaker: string | null; words: Word[]; estimated: boolean };
 
+const FILLER_RE = /^(um+|uh+|er+|erm|ah+|hmm+|like|basically|actually|literally)[.,!?]*$/i;
+
+/** Keys ("si:wi") of filler words, for one-click reviewable removal. */
+function fillerKeys(sentences: Sentence[]): string[] {
+  const keys: string[] = [];
+  sentences.forEach((s, si) => {
+    s.words.forEach((w, wi) => {
+      if (FILLER_RE.test(w.text.trim())) keys.push(`${si}:${wi}`);
+    });
+  });
+  return keys;
+}
+
 function toSentences(segments: TranscriptSegment[]): Sentence[] {
   return segments.map((seg, i) => {
     const start = seg.start ?? seg.start_time ?? 0;
