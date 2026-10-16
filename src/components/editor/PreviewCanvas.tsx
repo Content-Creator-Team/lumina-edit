@@ -16,6 +16,7 @@ function fmtTC(s: number) {
 /** Canvas-based preview player. Renders text/caption clips; video clips show placeholder. */
 export function PreviewCanvas({ className, playbackUrl }: { className?: string; playbackUrl?: string | null }) {
   const kit = useDefaultBrandKit();
+  const playingNow = useEditorStore((st) => st.playing);
   const compare = useEditorStore((st) => st.compareOriginal);
   const toggleCompare = useEditorStore((st) => st.toggleCompare);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -38,9 +39,9 @@ export function PreviewCanvas({ className, playbackUrl }: { className?: string; 
   useEffect(() => {
     const v = videoRef.current;
     if (!compare || !v) return;
-    if (playing) void v.play().catch(() => undefined);
+    if (playingNow) void v.play().catch(() => undefined);
     else v.pause();
-  }, [compare, playing]);
+  }, [compare, playingNow]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
   const lastRef = useRef<number | null>(null);
