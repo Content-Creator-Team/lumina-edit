@@ -254,8 +254,26 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
             <PreviewCanvas className="min-h-0 flex-1" playbackUrl={videoQ.data.playback_url ?? null} />
           )}
         </div>
-        {showProperties && <RightSidebar plan={planQ.data} videoId={videoId} />}
+        {showProperties && (
+          <div className="hidden md:block">
+            <RightSidebar plan={planQ.data} videoId={videoId} />
+          </div>
+        )}
         {showCopilot && <AICopilot />}
+        {/* Small screens: side panel becomes an overlay drawer. */}
+        {showProperties && drawerOpen && (
+          <div className="absolute inset-0 z-30 md:hidden">
+            <button
+              type="button"
+              aria-label="Close panel"
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setDrawerOpen(false)}
+            />
+            <div className="absolute inset-y-0 right-0 w-[85vw] max-w-sm shadow-2xl">
+              <RightSidebar plan={planQ.data} videoId={videoId} />
+            </div>
+          </div>
+        )}
         <FirstRunOverlay videoId={videoId} editCount={planQ.data?.segments.length ?? 0} />
       </div>
       <div className="surface-card relative m-2 shrink-0 overflow-y-auto rounded-xl" style={{ maxHeight: "40vh", minHeight: 180 }}>
