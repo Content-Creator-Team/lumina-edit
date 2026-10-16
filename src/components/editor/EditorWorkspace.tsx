@@ -257,6 +257,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
         saving={saveMut.isPending}
         saveError={saveMut.isError ? String(saveMut.error) : null}
         lastSavedAt={lastSavedAt}
+        onOpenDrawer={() => setDrawerOpen(true)}
       />
       <div className="relative mx-2 flex min-h-0 flex-1 gap-2 overflow-hidden">
         <div className="editor-stage flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-black/80">
