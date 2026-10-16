@@ -241,6 +241,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
         onSave={() => saveMut.mutate()}
         saving={saveMut.isPending}
         saveError={saveMut.isError ? String(saveMut.error) : null}
+        lastSavedAt={lastSavedAt}
       />
       <div className="relative mx-2 flex min-h-0 flex-1 gap-2 overflow-hidden">
         <div className="editor-stage flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-black/80">
@@ -258,6 +259,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
         <FirstRunOverlay videoId={videoId} editCount={planQ.data?.segments.length ?? 0} />
       </div>
       <div className="surface-card relative m-2 shrink-0 overflow-y-auto rounded-xl" style={{ maxHeight: "40vh", minHeight: 180 }}>
+        <ReviewMiniMap plan={planQ.data} />
         <Timeline />
       </div>
       <EditorCommandPalette onSave={() => saveMut.mutate()} />
