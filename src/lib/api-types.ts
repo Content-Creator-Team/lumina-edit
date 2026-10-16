@@ -250,6 +250,8 @@ export type SmartClip = {
   hook: string;
   reason: string;
   tags: string[];
+  /** Predicted share of viewers who stay to the end, 0–100, when reported. */
+  retention?: number | null;
 };
 
 export type SmartClipsResponse = {

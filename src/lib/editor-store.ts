@@ -37,7 +37,7 @@ export interface Clip {
 }
 
 export type AiDecision = "accepted" | "rejected";
-export type RightTab = "ai" | "properties" | "captions";
+export type RightTab = "ai" | "transcript" | "properties" | "captions";
 
 export interface Track {
   id: string;
@@ -107,6 +107,8 @@ interface EditorActions {
   cutRanges: (ranges: Array<{ start: number; end: number }>) => void;
 
   setRightTab: (tab: RightTab) => void;
+  /** Replace all clips on the first video track (transcript-driven edit). */
+  replaceVideoClips: (clips: Array<Omit<Clip, "trackId">>) => void;
   setAiDecision: (segmentIds: string[], decision: AiDecision | null) => void;
   /** Re-insert a clip that keeps its own id (used to restore a cut AI segment). */
   restoreClip: (trackId: string, clip: Clip) => void;
@@ -368,6 +370,17 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
     set((s) => withHistory(s, { tracks: applyCutRanges(s.tracks, ranges) })),
 
   setRightTab: (tab) => set({ rightTab: tab, showProperties: true }),
+  replaceVideoClips: (clips) =>
+    set((s) => {
+      const vt = s.tracks.find((t) => t.type === "video");
+      const trackId = vt?.id ?? "vt1";
+      const placed = clips.map((c) => ({ ...c, trackId }));
+      const tracks = vt
+        ? s.tracks.map((t) => (t.id === trackId ? { ...t, clips: placed } : t))
+        : [{ id: trackId, type: "video" as const, name: "Video 1", muted: false, locked: false, visible: true, clips: placed }, ...s.tracks];
+      const end = placed.reduce((m, c) => Math.max(m, c.startTime + c.duration), 0);
+      return withHistory(s, { tracks, duration: Math.max(end, 1), currentTime: 0 });
+    }),
   setAiDecision: (segmentIds, decision) =>
     set((s) => {
       const next = { ...s.aiDecisions };

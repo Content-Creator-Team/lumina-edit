@@ -21,6 +21,7 @@ import { Route as ResetPasswordRouteImport } from './routes/reset-password'
 import { Route as TemplatesRouteImport } from './routes/templates'
 import { Route as VerifyEmailRouteImport } from './routes/verify-email'
 import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authenticated/analytics'
+import { Route as AuthenticatedBrandRouteImport } from './routes/_authenticated/brand'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHighlightsRouteImport } from './routes/_authenticated/highlights'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
@@ -92,6 +93,11 @@ const VerifyEmailRoute = VerifyEmailRouteImport.update({
 const AuthenticatedAnalyticsRoute = AuthenticatedAnalyticsRouteImport.update({
   id: '/analytics',
   path: '/analytics',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
+const AuthenticatedBrandRoute = AuthenticatedBrandRouteImport.update({
+  id: '/brand',
+  path: '/brand',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
 const AuthenticatedDashboardRoute = AuthenticatedDashboardRouteImport.update({
@@ -182,6 +188,7 @@ export interface FileRoutesByFullPath {
   '/templates': typeof TemplatesRoute
   '/verify-email': typeof VerifyEmailRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/brand': typeof AuthenticatedBrandRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/highlights': typeof AuthenticatedHighlightsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -208,6 +215,7 @@ export interface FileRoutesByTo {
   '/templates': typeof TemplatesRoute
   '/verify-email': typeof VerifyEmailRoute
   '/analytics': typeof AuthenticatedAnalyticsRoute
+  '/brand': typeof AuthenticatedBrandRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/highlights': typeof AuthenticatedHighlightsRoute
   '/settings': typeof AuthenticatedSettingsRoute
@@ -236,6 +244,7 @@ export interface FileRoutesById {
   '/templates': typeof TemplatesRoute
   '/verify-email': typeof VerifyEmailRoute
   '/_authenticated/analytics': typeof AuthenticatedAnalyticsRoute
+  '/_authenticated/brand': typeof AuthenticatedBrandRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/highlights': typeof AuthenticatedHighlightsRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
@@ -264,6 +273,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/verify-email'
     | '/analytics'
+    | '/brand'
     | '/dashboard'
     | '/highlights'
     | '/settings'
@@ -290,6 +300,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/verify-email'
     | '/analytics'
+    | '/brand'
     | '/dashboard'
     | '/highlights'
     | '/settings'
@@ -317,6 +328,7 @@ export interface FileRouteTypes {
     | '/templates'
     | '/verify-email'
     | '/_authenticated/analytics'
+    | '/_authenticated/brand'
     | '/_authenticated/dashboard'
     | '/_authenticated/highlights'
     | '/_authenticated/settings'
@@ -432,6 +444,13 @@ declare module '@tanstack/react-router' {
       path: '/analytics'
       fullPath: '/analytics'
       preLoaderRoute: typeof AuthenticatedAnalyticsRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
+    '/_authenticated/brand': {
+      id: '/_authenticated/brand'
+      path: '/brand'
+      fullPath: '/brand'
+      preLoaderRoute: typeof AuthenticatedBrandRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
     '/_authenticated/dashboard': {
@@ -560,6 +579,7 @@ const AuthenticatedVideosIdRouteWithChildren =
 
 interface AuthenticatedRouteChildren {
   AuthenticatedAnalyticsRoute: typeof AuthenticatedAnalyticsRoute
+  AuthenticatedBrandRoute: typeof AuthenticatedBrandRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHighlightsRoute: typeof AuthenticatedHighlightsRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
@@ -570,6 +590,7 @@ interface AuthenticatedRouteChildren {
 
 const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedAnalyticsRoute: AuthenticatedAnalyticsRoute,
+  AuthenticatedBrandRoute: AuthenticatedBrandRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHighlightsRoute: AuthenticatedHighlightsRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,

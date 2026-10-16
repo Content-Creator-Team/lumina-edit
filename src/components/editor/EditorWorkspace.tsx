@@ -17,8 +17,9 @@ import { PropertiesPanel } from "./PropertiesPanel";
 import { CaptionsEditor } from "./CaptionsEditor";
 import { ExportModal } from "./ExportModal";
 import { AIChangesPanel } from "./AIChangesPanel";
+import { TranscriptDocument } from "./TranscriptDocument";
 import { EditorCommandPalette, FirstRunOverlay, ShortcutsSheet, cutMarkedRange } from "./EditorCommands";
-import { Command, Keyboard, Wand2 } from "lucide-react";
+import { Command, FileText, Keyboard, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function EditorToolbar({
@@ -230,7 +231,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
             <PreviewCanvas className="min-h-0 flex-1" playbackUrl={videoQ.data.playback_url ?? null} />
           )}
         </div>
-        {showProperties && <RightSidebar plan={planQ.data} />}
+        {showProperties && <RightSidebar plan={planQ.data} videoId={videoId} />}
         {showCopilot && <AICopilot />}
         <FirstRunOverlay videoId={videoId} editCount={planQ.data?.segments.length ?? 0} />
       </div>
@@ -253,15 +254,16 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
   );
 }
 
-function RightSidebar({ plan }: { plan: import("@/lib/api-types").EditPlan | undefined }) {
+function RightSidebar({ plan, videoId }: { plan: import("@/lib/api-types").EditPlan | undefined; videoId: string }) {
   const { rightTab, setRightTab } = useEditorStore();
   const tabs = [
     { key: "ai", label: "AI edits", icon: Wand2 },
+    { key: "transcript", label: "Transcript", icon: FileText },
     { key: "properties", label: "Properties", icon: SlidersHorizontal },
     { key: "captions", label: "Captions", icon: Captions },
   ] as const;
   return (
-    <aside aria-label="Editor side panel" className="surface-card flex w-80 shrink-0 flex-col overflow-hidden rounded-xl border border-border bg-card">
+    <aside aria-label="Editor side panel" className={cn("surface-card flex shrink-0", rightTab === "transcript" ? "w-[26rem]" : "w-80", " flex-col overflow-hidden rounded-xl border border-border bg-card")}>
       <div role="tablist" aria-label="Side panel" className="flex shrink-0 gap-1 border-b border-border p-1.5">
         {tabs.map((t) => (
           <button
@@ -281,6 +283,7 @@ function RightSidebar({ plan }: { plan: import("@/lib/api-types").EditPlan | und
       </div>
       <div className="sidebar-embed flex min-h-0 flex-1 flex-col overflow-y-auto">
         {rightTab === "ai" && <AIChangesPanel plan={plan} />}
+        {rightTab === "transcript" && <TranscriptDocument videoId={videoId} />}
         {rightTab === "properties" && <PropertiesPanel />}
         {rightTab === "captions" && <CaptionsEditor />}
       </div>

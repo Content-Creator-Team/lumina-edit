@@ -5,6 +5,7 @@ import {
   LayoutGrid,
   Loader2,
   LogOut,
+  Palette,
   Scissors,
   Settings,
   Sparkles,
@@ -29,6 +30,7 @@ const NAV = [
   { to: "/trimmer", label: "Trimmer", icon: Scissors },
   { to: "/highlights", label: "Highlights", icon: Sparkles },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
+  { to: "/brand", label: "Brand", icon: Palette },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 

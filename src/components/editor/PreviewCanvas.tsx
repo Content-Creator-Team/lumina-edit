@@ -3,6 +3,7 @@ import { useEditorStore } from "@/lib/editor-store";
 import { Play, Pause, SkipBack, SkipForward } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { useDefaultBrandKit } from "@/lib/brand-kit";
 
 function fmtTC(s: number) {
   const h = Math.floor(s / 3600);
@@ -14,6 +15,7 @@ function fmtTC(s: number) {
 
 /** Canvas-based preview player. Renders text/caption clips; video clips show placeholder. */
 export function PreviewCanvas({ className, playbackUrl }: { className?: string; playbackUrl?: string | null }) {
+  const kit = useDefaultBrandKit();
   const compare = useEditorStore((st) => st.compareOriginal);
   const toggleCompare = useEditorStore((st) => st.toggleCompare);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -56,14 +58,27 @@ export function PreviewCanvas({ className, playbackUrl }: { className?: string; 
         if (clip.type === "text" && clip.text) {
           ctx.save();
           ctx.globalAlpha = clip.opacity ?? 1;
-          ctx.font = `bold ${clip.fontSize ?? 26}px sans-serif`;
-          ctx.fillStyle = clip.fontColor ?? "#ffffff";
-          ctx.strokeStyle = "#000000";
-          ctx.lineWidth = 3;
+          const family = kit?.font_family ? `"${kit.font_family}", sans-serif` : "sans-serif";
+          const size = clip.fontSize ?? 26;
+          ctx.font = `800 ${size}px ${family}`;
           ctx.textAlign = "center";
           ctx.textBaseline = "bottom";
-          ctx.strokeText(clip.text, W / 2, H - 40);
+          const preset = kit?.caption_preset ?? "clean";
+          if (kit && preset === "bold-box") {
+            const w = ctx.measureText(clip.text).width;
+            ctx.fillStyle = kit.primary_color ?? "#7c3aed";
+            ctx.fillRect(W / 2 - w / 2 - 14, H - 40 - size - 8, w + 28, size + 18);
+          }
+          ctx.fillStyle = kit ? "#ffffff" : clip.fontColor ?? "#ffffff";
+          ctx.strokeStyle = "#000000";
+          ctx.lineWidth = preset === "bold-box" ? 0 : 3;
+          if (ctx.lineWidth) ctx.strokeText(clip.text, W / 2, H - 40);
           ctx.fillText(clip.text, W / 2, H - 40);
+          if (kit && preset === "highlight") {
+            const w = ctx.measureText(clip.text).width;
+            ctx.fillStyle = kit.accent_color ?? "#38bdf8";
+            ctx.fillRect(W / 2 - w / 2, H - 34, w, 5);
+          }
           ctx.restore();
         } else if (clip.type === "video" || clip.type === "image") {
           ctx.save();
@@ -124,7 +139,7 @@ export function PreviewCanvas({ className, playbackUrl }: { className?: string; 
     ctx.textAlign = "left";
     ctx.fillText(fmtTC(currentTime), 8, H - 6);
     ctx.restore();
-  }, [tracks, currentTime]);
+  }, [tracks, currentTime, kit]);
 
   const seek = useCallback((d: number) => setCurrentTime(currentTime + d), [currentTime, setCurrentTime]);
 
