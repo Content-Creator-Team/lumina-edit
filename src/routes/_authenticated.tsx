@@ -2,6 +2,7 @@ import { BrandMark } from "@/components/landing/site-header";
 import { Link, Outlet, createFileRoute, useNavigate, useRouterState } from "@tanstack/react-router";
 import {
   BarChart3,
+  ChevronDown,
   LayoutGrid,
   Loader2,
   LogOut,
@@ -16,6 +17,12 @@ import { useEffect, useRef } from "react";
 import { DemoBadge } from "@/components/demo-badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { useAuth } from "@/lib/auth-context";
 import { isDemoMode } from "@/lib/runtime-config";
 import { cn } from "@/lib/utils";
@@ -25,13 +32,17 @@ export const Route = createFileRoute("/_authenticated")({
   component: AuthenticatedLayout,
 });
 
+// Primary destinations stay visible; occasional tools live under "More".
 const NAV = [
   { to: "/dashboard", label: "Videos", icon: LayoutGrid },
   { to: "/upload", label: "Upload", icon: UploadCloud },
-  { to: "/trimmer", label: "Trimmer", icon: Scissors },
   { to: "/highlights", label: "Highlights", icon: Sparkles },
   { to: "/analytics", label: "Analytics", icon: BarChart3 },
-  { to: "/brand", label: "Brand", icon: Palette },
+] as const;
+
+const MORE_NAV = [
+  { to: "/trimmer", label: "Trimmer", icon: Scissors },
+  { to: "/brand", label: "Brand kit", icon: Palette },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
 
@@ -138,6 +149,33 @@ function AuthenticatedLayout() {
                 </Link>
               );
             })}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <button
+                  type="button"
+                  aria-label="More tools"
+                  className={cn(
+                    "inline-flex items-center gap-1 rounded-md px-3 py-2 text-sm transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
+                    MORE_NAV.some((i) => pathname.startsWith(i.to))
+                      ? "bg-accent font-medium text-accent-foreground"
+                      : "text-muted-foreground hover:bg-accent/60 hover:text-foreground",
+                  )}
+                >
+                  More
+                  <ChevronDown className="size-3.5" aria-hidden="true" />
+                </button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start">
+                {MORE_NAV.map((item) => (
+                  <DropdownMenuItem key={item.to} asChild>
+                    <Link to={item.to} className="flex items-center gap-2">
+                      <item.icon className="size-4" aria-hidden="true" strokeWidth={1.75} />
+                      {item.label}
+                    </Link>
+                  </DropdownMenuItem>
+                ))}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </nav>
 
           <div className="ml-auto flex items-center gap-2">

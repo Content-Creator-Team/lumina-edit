@@ -1,4 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
+import { recordRejection, styleMemoryHints } from "@/lib/editor-extras";
+
+const styleHints = styleMemoryHints();
 import { Check, CircleAlert, Scissors, Sparkles, Star, Undo2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -106,6 +109,7 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
     if (isCut(seg)) restoreClip("vt1", clipForSegment(seg, timelineEnd() + 0.4));
     else deleteClip(clipIdForSegment(seg.id));
     setAiDecision([seg.id], "rejected", false);
+    recordRejection(seg.reason); // style memory: learn what this editor rejects
   };
 
   const revert = (seg: PlanSegment) => {
@@ -175,6 +179,12 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
         </div>
         {!hasConfidence && (
           <p className="text-[10px] text-muted-foreground">The backend didn't report confidence for this plan.</p>
+        )}
+        {styleHints.length > 0 && (
+          <p className="rounded-md border border-primary/25 bg-primary/5 p-2 text-[10px] text-muted-foreground">
+            <span className="font-medium text-foreground">Style memory:</span> you often reject{" "}
+            {styleHints.join(", ")} — the next AI revision will avoid these. Learned on this device.
+          </p>
         )}
         <p className="text-[10px] text-muted-foreground">
           Keyboard: <kbd className="rounded border border-border bg-muted px-1 font-mono">A</kbd> accept ·{" "}

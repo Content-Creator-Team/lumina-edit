@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
-import { Download, Loader2 } from "lucide-react";
+import { Check, Copy, Download, ListOrdered, Loader2 } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import {
   Dialog,
@@ -14,6 +14,63 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useEditorStore } from "@/lib/editor-store";
 import { api } from "@/lib/api-client";
+import { formatTimecode, transcriptQuery } from "@/lib/queries";
+
+/** Chapters + a YouTube description drafted from the transcript (client-side). */
+function ChaptersBlock({ videoId }: { videoId: string }) {
+  const q = useQuery({ ...transcriptQuery(videoId), staleTime: 60_000 });
+  const [copied, setCopied] = useState(false);
+
+  const text = useMemo(() => {
+    const segs = q.data?.segments ?? [];
+    if (segs.length === 0) return null;
+    // One chapter per ~30s of speech, titled by the first words of the segment.
+    const chapters: string[] = [];
+    let last = -30;
+    for (const s of segs) {
+      const start = s.start ?? s.start_time ?? 0;
+      if (start - last >= 30 || chapters.length === 0) {
+        const title = s.text.trim().split(/\s+/).slice(0, 6).join(" ").replace(/[.!?]+$/, "");
+        chapters.push(`${formatTimecode(start)} ${title}`);
+        last = start;
+      }
+      if (chapters.length >= 12) break;
+    }
+    const summary = segs[0] ? segs[0].text.trim().slice(0, 140) : "";
+    return `${summary}${summary.length === 140 ? "…" : ""}\n\nChapters:\n${chapters.join("\n")}`;
+  }, [q.data]);
+
+  if (!text) return null;
+
+  return (
+    <div className="space-y-1.5">
+      <div className="flex items-center justify-between">
+        <Label className="flex items-center gap-1.5 text-xs">
+          <ListOrdered className="size-3.5" aria-hidden="true" />
+          Chapters &amp; description (from the transcript)
+        </Label>
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-6 gap-1 px-2 text-[10px]"
+          onClick={() => {
+            void navigator.clipboard.writeText(text).then(() => {
+              setCopied(true);
+              setTimeout(() => setCopied(false), 2000);
+            });
+          }}
+        >
+          {copied ? <Check className="size-3 text-success" aria-hidden="true" /> : <Copy className="size-3" aria-hidden="true" />}
+          {copied ? "Copied" : "Copy"}
+        </Button>
+      </div>
+      <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">{text}</pre>
+      <p className="text-[10px] text-muted-foreground">
+        Drafted from the transcript — review before pasting into YouTube. Chapters are estimated every ~30s of speech.
+      </p>
+    </div>
+  );
+}
 
 type Props = {
   onBeforeExport?: () => Promise<void>;
@@ -146,6 +203,20 @@ export function ExportModal({ onBeforeExport }: Props) {
             <input type="checkbox" checked={preferFaces} onChange={(e) => setPreferFaces(e.target.checked)} />
             Prefer face-centered reframing
           </label>
+
+          {videoId && <ChaptersBlock videoId={videoId} />}
+
+          <div className="rounded-md border border-border bg-muted/20 p-2.5 text-[11px] text-muted-foreground">
+            <p className="font-medium text-foreground">Pre-export checks</p>
+            <ul className="mt-1 space-y-0.5">
+              <li>✓ Edit plan and timeline reviewed above</li>
+              <li>✓ Caption overflow: long captions are wrapped, not clipped, by the renderer</li>
+              <li className="text-muted-foreground/80">
+                – Blur, darkness and audio-clipping detection need a media-analysis service that isn't
+                connected yet, so those aren't checked here.
+              </li>
+            </ul>
+          </div>
 
           {showLowConfWarning && (
             <div role="alert" className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">

@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Sparkles, Loader2, ChevronRight, Scissors, Wand2, X, Languages, Palette,
+  Search, History, Bookmark, BookmarkCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +13,10 @@ import { cn } from "@/lib/utils";
 import { useEditorStore } from "@/lib/editor-store";
 import { api } from "@/lib/api-client";
 import { agentOpsToTimelineRanges } from "@/lib/timeline-persist";
+import { formatTimecode, transcriptQuery } from "@/lib/queries";
+import {
+  getPromptHistory, getSavedPrompts, recordPrompt, toggleSavedPrompt,
+} from "@/lib/editor-extras";
 import { SilenceRemovalPanel } from "./SilenceRemovalPanel";
 
 function EngagementPanel({ videoId }: { videoId: string }) {
@@ -127,12 +132,16 @@ function SmartClipsPanel({ videoId }: { videoId: string }) {
 function CommandPanel({ videoId }: { videoId: string }) {
   const [instr, setInstr] = useState("");
   const [summary, setSummary] = useState<string | null>(null);
+  const [saved, setSaved] = useState<string[]>(() => getSavedPrompts());
+  const [history, setHistory] = useState<string[]>(() => getPromptHistory());
 
   const mutation = useMutation({
     mutationFn: (instruction: string) => api.agentEdit(videoId, instruction),
-    onSuccess: (data) => {
+    onSuccess: (data, instruction) => {
       setInstr("");
       setSummary(data.edit_plan.summary);
+      recordPrompt(instruction);
+      setHistory(getPromptHistory());
       const currentTracks = useEditorStore.getState().tracks;
       const ranges = agentOpsToTimelineRanges(data.edit_plan.operations, currentTracks);
       if (ranges.length > 0) useEditorStore.getState().cutRanges(ranges);
@@ -155,6 +164,8 @@ function CommandPanel({ videoId }: { videoId: string }) {
     "Remove all filler words",
   ];
 
+  const isSaved = saved.includes(instr.trim());
+
   return (
     <div className="space-y-3 p-3">
       <Textarea value={instr} onChange={(e) => setInstr(e.target.value)}
@@ -162,16 +173,56 @@ function CommandPanel({ videoId }: { videoId: string }) {
         className="min-h-[80px] resize-none text-sm"
         onKeyDown={(e) => { if (e.key === "Enter" && (e.metaKey || e.ctrlKey) && instr.trim()) mutation.mutate(instr); }}
       />
-      <Button className="w-full" size="sm" disabled={!instr.trim() || mutation.isPending} onClick={() => mutation.mutate(instr)}>
-        {mutation.isPending ? <Loader2 className="mr-1.5 size-3.5 animate-spin" /> : <Wand2 className="mr-1.5 size-3.5" />}
-        {mutation.isPending ? "Processing…" : "Apply (⌘↵)"}
-      </Button>
+      <div className="flex gap-2">
+        <Button className="flex-1" size="sm" disabled={!instr.trim() || mutation.isPending} onClick={() => mutation.mutate(instr)}>
+          {mutation.isPending ? <Loader2 className="mr-1.5 size-3.5 animate-spin" /> : <Wand2 className="mr-1.5 size-3.5" />}
+          {mutation.isPending ? "Processing…" : "Apply (⌘↵)"}
+        </Button>
+        <Button
+          variant="outline"
+          size="sm"
+          className="shrink-0"
+          disabled={!instr.trim()}
+          aria-pressed={isSaved}
+          aria-label={isSaved ? "Remove from saved prompts" : "Save this prompt for reuse"}
+          title={isSaved ? "Remove from saved prompts" : "Save this prompt for reuse"}
+          onClick={() => setSaved(toggleSavedPrompt(instr))}
+        >
+          {isSaved ? <BookmarkCheck className="size-3.5 text-primary" /> : <Bookmark className="size-3.5" />}
+        </Button>
+      </div>
       {mutation.isError && <p className="text-xs text-red-400">{String(mutation.error)}</p>}
       {mutation.isSuccess && (
         <p className="text-xs text-green-400">
           Applied {mutation.data.edit_plan.operations.length} cut(s) to the timeline.
           {summary ? ` ${summary}` : ""} Save to persist.
         </p>
+      )}
+      {saved.length > 0 && (
+        <div className="space-y-0.5">
+          <p className="mb-1 flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <Bookmark className="size-3" aria-hidden="true" /> Saved prompts
+          </p>
+          {saved.map((s) => (
+            <button key={s} onClick={() => setInstr(s)}
+              className="flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+              <ChevronRight className="size-3 shrink-0" />{s}
+            </button>
+          ))}
+        </div>
+      )}
+      {history.length > 0 && (
+        <div className="space-y-0.5">
+          <p className="mb-1 flex items-center gap-1 text-[10px] uppercase tracking-wide text-muted-foreground">
+            <History className="size-3" aria-hidden="true" /> Recent prompts
+          </p>
+          {history.slice(0, 5).map((s) => (
+            <button key={s} onClick={() => setInstr(s)}
+              className="flex w-full items-center gap-1.5 rounded px-1.5 py-1 text-left text-xs text-muted-foreground transition-colors hover:bg-accent hover:text-foreground">
+              <ChevronRight className="size-3 shrink-0" />{s}
+            </button>
+          ))}
+        </div>
       )}
       <div className="space-y-0.5">
         <p className="mb-1 text-[10px] uppercase tracking-wide text-muted-foreground">Quick actions</p>
@@ -182,6 +233,60 @@ function CommandPanel({ videoId }: { videoId: string }) {
           </button>
         ))}
       </div>
+    </div>
+  );
+}
+
+/** "Find a moment": search the transcript and jump the playhead to matches. */
+function FindPanel({ videoId }: { videoId: string }) {
+  const [term, setTerm] = useState("");
+  const q = useQuery(transcriptQuery(videoId));
+  const { setCurrentTime, setPlaying } = useEditorStore();
+
+  const matches = useMemo(() => {
+    const needle = term.trim().toLowerCase();
+    if (needle.length < 2) return [];
+    return (q.data?.segments ?? [])
+      .filter((s) => s.text.toLowerCase().includes(needle))
+      .slice(0, 30);
+  }, [q.data, term]);
+
+  return (
+    <div className="space-y-3 p-3">
+      <div className="relative">
+        <Search className="pointer-events-none absolute left-2 top-1/2 size-3.5 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
+        <Input
+          value={term}
+          onChange={(e) => setTerm(e.target.value)}
+          placeholder="Find a moment… e.g. “pricing”"
+          aria-label="Search the transcript"
+          className="h-8 pl-7 text-xs"
+        />
+      </div>
+      {q.isPending && <p className="text-xs text-muted-foreground">Loading transcript…</p>}
+      {q.isError && <p className="text-xs text-destructive">Couldn't load the transcript.</p>}
+      {q.data && (q.data.segments ?? []).length === 0 && (
+        <p className="text-xs text-muted-foreground">No transcript yet — search works once transcription finishes.</p>
+      )}
+      {term.trim().length >= 2 && matches.length === 0 && !q.isPending && (
+        <p className="text-xs text-muted-foreground">No matches for “{term.trim()}”.</p>
+      )}
+      <ul className="space-y-1" aria-label="Transcript search results">
+        {matches.map((s, i) => {
+          const start = s.start ?? s.start_time ?? 0;
+          return (
+            <li key={s.id ?? i}>
+              <button
+                onClick={() => { setCurrentTime(start); setPlaying(true); }}
+                className="w-full rounded-md border border-border bg-muted/30 p-2 text-left transition-colors hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none"
+              >
+                <span className="font-mono text-[10px] text-primary">{formatTimecode(start)}</span>
+                <span className="mt-0.5 block text-xs leading-snug text-foreground">{s.text}</span>
+              </button>
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }
@@ -364,8 +469,9 @@ export function AICopilot() {
         </Button>
       </div>
       <Tabs value={tab} onValueChange={setTab} className="flex flex-1 flex-col overflow-hidden">
-        <TabsList className="mx-2 mt-2 grid h-auto grid-cols-3 gap-0.5">
+        <TabsList className="mx-2 mt-2 grid h-auto grid-cols-4 gap-0.5">
           <TabsTrigger value="command" className="text-[10px]">Command</TabsTrigger>
+          <TabsTrigger value="find" className="text-[10px]">Find</TabsTrigger>
           <TabsTrigger value="silence" className="text-[10px]">Silence</TabsTrigger>
           <TabsTrigger value="clips" className="text-[10px]">Clips</TabsTrigger>
           <TabsTrigger value="score" className="text-[10px]">Score</TabsTrigger>
@@ -374,6 +480,7 @@ export function AICopilot() {
         </TabsList>
         <div className="flex-1 overflow-y-auto">
           <TabsContent value="command" className="mt-0"><CommandPanel videoId={videoId} /></TabsContent>
+          <TabsContent value="find" className="mt-0"><FindPanel videoId={videoId} /></TabsContent>
           <TabsContent value="silence" className="mt-0"><SilenceRemovalPanel videoId={videoId} /></TabsContent>
           <TabsContent value="clips" className="mt-0"><SmartClipsPanel videoId={videoId} /></TabsContent>
           <TabsContent value="score" className="mt-0"><EngagementPanel videoId={videoId} /></TabsContent>

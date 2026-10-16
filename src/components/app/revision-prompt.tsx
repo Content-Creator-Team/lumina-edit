@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { ApiError, api } from "@/lib/api-client";
 import type { EditPlan } from "@/lib/api-types";
+import { getProjectGoal, goalLabel, styleMemoryHints } from "@/lib/editor-extras";
 
 type Props = {
   videoId: string;
@@ -24,7 +25,17 @@ export function RevisionPrompt({ videoId, planId, disabled, onRevised }: Props) 
   const [instruction, setInstruction] = useState("");
 
   const revise = useMutation({
-    mutationFn: (text: string) => api.revisePlan(videoId, planId, text),
+    mutationFn: (text: string) => {
+      // Prepend the project goal and learned style preferences so the AI
+      // revises with that intent. Both are stored locally on this device.
+      const goal = goalLabel(getProjectGoal(videoId));
+      const hints = styleMemoryHints();
+      const prefix = [
+        goal ? `This video is a ${goal}.` : null,
+        hints.length > 0 ? `The editor often rejects: ${hints.join(", ")} — avoid those.` : null,
+      ].filter(Boolean).join(" ");
+      return api.revisePlan(videoId, planId, prefix ? `${prefix}\n\n${text}` : text);
+    },
     onSuccess: (plan) => {
       setInstruction("");
       onRevised(plan);

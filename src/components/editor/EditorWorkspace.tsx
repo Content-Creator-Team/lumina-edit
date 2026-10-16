@@ -46,12 +46,14 @@ function EditorToolbar({
   saving,
   saveError,
   lastSavedAt,
+  onOpenDrawer,
 }: {
   videoName: string;
   onSave: () => void;
   saving: boolean;
   saveError: string | null;
   lastSavedAt: number | null;
+  onOpenDrawer?: () => void;
 }) {
   const {
     undo, redo, toggleCopilot, showCopilot, splitClip, currentTime, selectedClipId,
@@ -118,13 +120,25 @@ function EditorToolbar({
           <Button
             variant={showProperties ? "secondary" : "ghost"}
             size="sm"
-            className="h-7 gap-1.5 px-2.5 text-xs"
+            className="hidden h-7 gap-1.5 px-2.5 text-xs md:inline-flex"
             onClick={toggleProperties}
             aria-pressed={showProperties}
           >
             <SlidersHorizontal className="size-3.5" />
             Panel
           </Button>
+          {onOpenDrawer && (
+            <Button
+              variant="ghost"
+              size="sm"
+              className="h-7 gap-1.5 px-2.5 text-xs md:hidden"
+              onClick={onOpenDrawer}
+              aria-label="Open panel"
+            >
+              <SlidersHorizontal className="size-3.5" />
+              Panel
+            </Button>
+          )}
           <Button
             variant={showCopilot ? "secondary" : "ghost"}
             size="sm"
@@ -152,6 +166,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
   } = useEditorStore();
   const queryClient = useQueryClient();
   const [lastSavedAt, setLastSavedAt] = useState<number | null>(null);
+  const [drawerOpen, setDrawerOpen] = useState(false);
 
   const videoQ = useQuery({
     queryKey: ["video", videoId],
@@ -242,6 +257,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
         saving={saveMut.isPending}
         saveError={saveMut.isError ? String(saveMut.error) : null}
         lastSavedAt={lastSavedAt}
+        onOpenDrawer={() => setDrawerOpen(true)}
       />
       <div className="relative mx-2 flex min-h-0 flex-1 gap-2 overflow-hidden">
         <div className="editor-stage flex min-w-0 flex-1 flex-col overflow-hidden rounded-xl border border-border bg-black/80">
@@ -254,8 +270,26 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
             <PreviewCanvas className="min-h-0 flex-1" playbackUrl={videoQ.data.playback_url ?? null} />
           )}
         </div>
-        {showProperties && <RightSidebar plan={planQ.data} videoId={videoId} />}
+        {showProperties && (
+          <div className="hidden md:block">
+            <RightSidebar plan={planQ.data} videoId={videoId} />
+          </div>
+        )}
         {showCopilot && <AICopilot />}
+        {/* Small screens: side panel becomes an overlay drawer. */}
+        {showProperties && drawerOpen && (
+          <div className="absolute inset-0 z-30 md:hidden">
+            <button
+              type="button"
+              aria-label="Close panel"
+              className="absolute inset-0 bg-black/50"
+              onClick={() => setDrawerOpen(false)}
+            />
+            <div className="absolute inset-y-0 right-0 w-[85vw] max-w-sm shadow-2xl">
+              <RightSidebar plan={planQ.data} videoId={videoId} />
+            </div>
+          </div>
+        )}
         <FirstRunOverlay videoId={videoId} editCount={planQ.data?.segments.length ?? 0} />
       </div>
       <div className="surface-card relative m-2 shrink-0 overflow-y-auto rounded-xl" style={{ maxHeight: "40vh", minHeight: 180 }}>
