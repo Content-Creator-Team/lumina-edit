@@ -204,6 +204,20 @@ export function ExportModal({ onBeforeExport }: Props) {
             Prefer face-centered reframing
           </label>
 
+          {videoId && <ChaptersBlock videoId={videoId} />}
+
+          <div className="rounded-md border border-border bg-muted/20 p-2.5 text-[11px] text-muted-foreground">
+            <p className="font-medium text-foreground">Pre-export checks</p>
+            <ul className="mt-1 space-y-0.5">
+              <li>✓ Edit plan and timeline reviewed above</li>
+              <li>✓ Caption overflow: long captions are wrapped, not clipped, by the renderer</li>
+              <li className="text-muted-foreground/80">
+                – Blur, darkness and audio-clipping detection need a media-analysis service that isn't
+                connected yet, so those aren't checked here.
+              </li>
+            </ul>
+          </div>
+
           {showLowConfWarning && (
             <div role="alert" className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
               <p className="font-medium text-foreground">
