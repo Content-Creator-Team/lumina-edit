@@ -119,6 +119,7 @@ function generatePlan(seed: DemoVideoSeed): EditPlan {
         scene_id: scene.id ?? null,
         thumbnail_url: null,
         reason: index % 2 === 0 ? "Duplicate of the previous point" : "Adds context",
+        confidence: index % 2 === 0 ? 0.58 : 0.71,
       },
     ];
   });
