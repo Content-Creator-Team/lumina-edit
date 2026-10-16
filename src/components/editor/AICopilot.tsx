@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import {
   Sparkles, Loader2, ChevronRight, Scissors, Wand2, X, Languages, Palette,
+  Search, History, Bookmark, BookmarkCheck,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
@@ -12,6 +13,10 @@ import { cn } from "@/lib/utils";
 import { useEditorStore } from "@/lib/editor-store";
 import { api } from "@/lib/api-client";
 import { agentOpsToTimelineRanges } from "@/lib/timeline-persist";
+import { formatTimecode, transcriptQuery } from "@/lib/queries";
+import {
+  getPromptHistory, getSavedPrompts, recordPrompt, toggleSavedPrompt,
+} from "@/lib/editor-extras";
 import { SilenceRemovalPanel } from "./SilenceRemovalPanel";
 
 function EngagementPanel({ videoId }: { videoId: string }) {
