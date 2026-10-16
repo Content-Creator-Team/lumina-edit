@@ -165,6 +165,7 @@ function Playhead({ currentTime, zoom, totalHeight }: { currentTime: number; zoo
 
 export function Timeline() {
   const { tracks, currentTime, duration, zoom, setCurrentTime, setZoom, addTrack, selectClip, moveClip } = useEditorStore();
+  const comments = useCommentMarkers();
   const totalWidth = Math.max(duration * zoom + 200, 800);
   const totalHeight = tracks.length * TRACK_HEIGHT;
   const dragRef = useRef<{ clipId: string; startX: number; origStart: number; origTrackId: string } | null>(null);
