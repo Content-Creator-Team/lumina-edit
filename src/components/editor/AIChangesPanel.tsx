@@ -107,6 +107,7 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
     if (isCut(seg)) restoreClip("vt1", clipForSegment(seg, timelineEnd() + 0.4));
     else deleteClip(clipIdForSegment(seg.id));
     setAiDecision([seg.id], "rejected", false);
+    recordRejection(seg.reason); // style memory: learn what this editor rejects
   };
 
   const revert = (seg: PlanSegment) => {
