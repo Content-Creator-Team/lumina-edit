@@ -1,3 +1,4 @@
+import { BrandMark } from "@/components/landing/site-header";
 import { useEffect } from "react";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link } from "@tanstack/react-router";
@@ -45,7 +46,7 @@ function EditorToolbar({
       <header className="glass-panel relative z-10 m-2 flex h-12 shrink-0 items-center gap-2 rounded-xl px-3">
         <Link to="/dashboard" className="flex items-center gap-1.5 text-muted-foreground hover:text-foreground">
           <Film className="size-4 text-primary" strokeWidth={1.75} />
-          <span className="font-[family-name:var(--font-display)] text-sm">REELZOY</span>
+          <BrandMark />
         </Link>
         <div className="mx-2 h-4 w-px bg-border" />
         <span className="max-w-48 truncate text-sm">{videoName}</span>

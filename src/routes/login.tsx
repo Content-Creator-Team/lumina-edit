@@ -1,3 +1,4 @@
+import { BrandMark } from "@/components/landing/site-header";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { Eye, EyeOff, KeyRound, Loader2, LogIn } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
@@ -106,7 +107,7 @@ function LoginPage() {
             className="mx-auto flex size-12 items-center justify-center rounded-xl"
             style={{ background: "linear-gradient(140deg, var(--primary), var(--primary-deep))" }}
           />
-          <h1 className="mt-8 font-[family-name:var(--font-display)] text-3xl">REELZOY</h1>
+          <h1 className="mt-8"><span className="sr-only">REELZOY</span><BrandMark /></h1>
           <p className="mt-2 text-sm text-cinema-muted">
             {mfaChallenge ? "Enter your authenticator code to continue." : "Sign in to your account."}
           </p>
