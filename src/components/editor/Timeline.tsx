@@ -1,8 +1,34 @@
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useEffect, useState } from "react";
 import { cn } from "@/lib/utils";
 import { useEditorStore, type Track, type Clip, type TrackType } from "@/lib/editor-store";
-import { Eye, EyeOff, Volume2, VolumeX, Lock, Unlock, Trash2, Plus, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Volume2, VolumeX, Lock, Unlock, Trash2, Plus, Sparkles, MessageSquare } from "lucide-react";
 import { Button } from "@/components/ui/button";
+
+type ReviewComment = { id: string; time: number; text: string; author: string };
+
+/** Timestamped comments from the Review page, shown as markers on the ruler. */
+function useCommentMarkers(): ReviewComment[] {
+  const videoId = useEditorStore((s) => s.videoId);
+  const [comments, setComments] = useState<ReviewComment[]>([]);
+  useEffect(() => {
+    if (!videoId) return;
+    const read = () => {
+      try {
+        setComments(JSON.parse(localStorage.getItem(`reelzoy.comments.${videoId}`) ?? "[]"));
+      } catch {
+        setComments([]);
+      }
+    };
+    read();
+    window.addEventListener("storage", read);
+    const id = setInterval(read, 5000); // same-tab writes don't fire "storage"
+    return () => {
+      window.removeEventListener("storage", read);
+      clearInterval(id);
+    };
+  }, [videoId]);
+  return comments;
+}
 
 const TRACK_HEIGHT = 48;
 const HEADER_WIDTH = 180;
