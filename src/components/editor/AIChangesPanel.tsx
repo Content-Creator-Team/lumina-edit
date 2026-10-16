@@ -178,6 +178,12 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
         {!hasConfidence && (
           <p className="text-[10px] text-muted-foreground">The backend didn't report confidence for this plan.</p>
         )}
+        {styleHints.length > 0 && (
+          <p className="rounded-md border border-primary/25 bg-primary/5 p-2 text-[10px] text-muted-foreground">
+            <span className="font-medium text-foreground">Style memory:</span> you often reject{" "}
+            {styleHints.join(", ")} — the next AI revision will avoid these. Learned on this device.
+          </p>
+        )}
         <p className="text-[10px] text-muted-foreground">
           Keyboard: <kbd className="rounded border border-border bg-muted px-1 font-mono">A</kbd> accept ·{" "}
           <kbd className="rounded border border-border bg-muted px-1 font-mono">R</kbd> reject ·{" "}
