@@ -156,6 +156,8 @@ function VersionsPage() {
 
       <VariantCuts videoId={id} />
 
+      {plans.length >= 2 && <ComparePlans plans={plans} />}
+
       <h2 className="mt-10 font-[family-name:var(--font-display)] text-xl">Plan history</h2>
       <p className="mt-6 flex items-start gap-2 rounded-md border border-border p-4 text-sm text-muted-foreground">
         <Info className="mt-0.5 size-4 shrink-0" aria-hidden="true" />
