@@ -24,16 +24,34 @@ import { EditorCommandPalette, FirstRunOverlay, ShortcutsSheet, cutMarkedRange }
 import { Command, FileText, Keyboard, Wand2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 
+function SavedAgo({ at }: { at: number }) {
+  const [, tick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => tick((n) => n + 1), 5000);
+    return () => clearInterval(id);
+  }, []);
+  const secs = Math.max(0, Math.round((Date.now() - at) / 1000));
+  const label = secs < 5 ? "Saved · just now" : secs < 60 ? `Saved · ${secs}s ago` : `Saved · ${Math.floor(secs / 60)}m ago`;
+  return (
+    <span className="flex items-center gap-1 text-[10px] text-success" aria-live="polite">
+      <span className="inline-block size-1.5 rounded-full bg-success" aria-hidden="true" />
+      {label}
+    </span>
+  );
+}
+
 function EditorToolbar({
   videoName,
   onSave,
   saving,
   saveError,
+  lastSavedAt,
 }: {
   videoName: string;
   onSave: () => void;
   saving: boolean;
   saveError: string | null;
+  lastSavedAt: number | null;
 }) {
   const {
     undo, redo, toggleCopilot, showCopilot, splitClip, currentTime, selectedClipId,
