@@ -1,4 +1,6 @@
 import { Link } from "@tanstack/react-router";
+import logoLight from "@/assets/logo-light.png";
+import logoDark from "@/assets/logo-dark.png";
 
 import { ThemeToggle } from "@/components/theme-toggle";
 import { DemoBadge } from "@/components/demo-badge";
@@ -12,8 +14,9 @@ const LINKS = [
 
 export function BrandMark() {
   return (
-    <span className="font-[family-name:var(--font-display)] text-xl font-extrabold tracking-tight">
-      REEL<span className="text-brand-gradient">ZOY</span>
+    <span className="inline-flex items-center">
+      <img src={logoLight} alt="REELZOY" className="h-11 w-auto rounded-md dark:hidden" />
+      <img src={logoDark} alt="REELZOY" className="hidden h-10 w-auto rounded-md dark:block" />
     </span>
   );
 }
