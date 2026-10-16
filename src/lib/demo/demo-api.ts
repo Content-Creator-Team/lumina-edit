@@ -107,6 +107,7 @@ function generatePlan(seed: DemoVideoSeed): EditPlan {
         scene_id: scene.id ?? null,
         thumbnail_url: null,
         reason: "Clear delivery, stable framing",
+        confidence: 0.9 - (index % 3) * 0.08,
       },
       {
         id: `gen-${index}-b`,
