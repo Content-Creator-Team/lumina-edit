@@ -69,6 +69,7 @@ function EditorToolbar({
         <div className="mx-2 h-4 w-px bg-border" />
         <span className="max-w-48 truncate text-sm">{videoName}</span>
         {dirty && <span className="rounded-full bg-warning/15 px-2 py-0.5 text-[10px] text-warning">Unsaved</span>}
+        {!dirty && lastSavedAt && <SavedAgo at={lastSavedAt} />}
         <div className="mx-2 h-4 w-px bg-border" />
         <Tooltip>
           <TooltipTrigger asChild>
