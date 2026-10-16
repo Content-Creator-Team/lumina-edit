@@ -4,50 +4,50 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { DemoBadge } from "@/components/demo-badge";
 import { Button } from "@/components/ui/button";
 
+const LINKS = [
+  { to: "/features", label: "Features" },
+  { to: "/templates", label: "Templates" },
+  { to: "/pricing", label: "Pricing" },
+] as const;
+
+export function BrandMark() {
+  return (
+    <span className="font-[family-name:var(--font-display)] text-xl font-extrabold tracking-tight">
+      REEL<span className="text-brand-gradient">ZOY</span>
+    </span>
+  );
+}
+
 export function SiteHeader() {
   return (
-    <header className="absolute inset-x-0 top-0 z-30">
+    <header className="sticky top-0 z-30 border-b border-border bg-background/80 backdrop-blur">
       <nav
         aria-label="Primary"
-        className="mx-auto flex w-full max-w-6xl items-center justify-between px-6 py-6"
+        className="mx-auto flex w-full max-w-6xl items-center justify-between gap-4 px-6 py-4"
       >
-        <Link
-          to="/"
-          className="flex items-center gap-3 rounded-sm focus-visible:ring-2 focus-visible:ring-cinema-ember focus-visible:outline-none"
-        >
-          <span
-            aria-hidden="true"
-            className="flex size-8 items-center justify-center rounded-md border border-cinema-line"
-            style={{
-              background: "linear-gradient(140deg, var(--primary), var(--primary-deep))",
-            }}
-          />
-          <span className="font-[family-name:var(--font-display)] text-lg tracking-wide text-cinema-ink">
-            REELZOY
-          </span>
+        <Link to="/" className="rounded-sm text-foreground">
+          <BrandMark />
         </Link>
-
-        <div className="flex items-center gap-2 sm:gap-4">
-          <DemoBadge className="hidden md:inline-flex" />
-          <a
-            href="#journey"
-            className="hidden rounded-sm text-sm text-cinema-muted transition-colors hover:text-cinema-ink focus-visible:ring-2 focus-visible:ring-cinema-ember focus-visible:outline-none sm:inline"
-          >
-            The journey
-          </a>
-          <a
-            href="#craft"
-            className="hidden rounded-sm text-sm text-cinema-muted transition-colors hover:text-cinema-ink focus-visible:ring-2 focus-visible:ring-cinema-ember focus-visible:outline-none sm:inline"
-          >
-            Craft
-          </a>
-          <ThemeToggle className="border-cinema-line text-cinema-muted hover:bg-cinema-haze/40 hover:text-cinema-ink" />
-          <Button
-            asChild
-            variant="outline"
-            className="border-cinema-line bg-transparent text-cinema-ink hover:bg-cinema-haze/40 hover:text-cinema-ink"
-          >
-            <Link to="/login">Log in</Link>
+        <div className="hidden items-center gap-6 md:flex">
+          {LINKS.map((l) => (
+            <Link
+              key={l.to}
+              to={l.to}
+              className="rounded-sm text-sm text-muted-foreground transition-colors hover:text-foreground"
+              activeProps={{ className: "text-foreground font-semibold" }}
+            >
+              {l.label}
+            </Link>
+          ))}
+        </div>
+        <div className="flex items-center gap-2">
+          <DemoBadge className="hidden lg:inline-flex" />
+          <ThemeToggle />
+          <Button asChild variant="outline" size="sm" className="hidden sm:inline-flex">
+            <Link to="/login">Login</Link>
+          </Button>
+          <Button asChild size="sm" className="bg-brand-gradient text-primary-foreground hover:opacity-90">
+            <Link to="/register">Get Started</Link>
           </Button>
         </div>
       </nav>

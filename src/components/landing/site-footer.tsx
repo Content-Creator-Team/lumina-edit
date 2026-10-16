@@ -1,30 +1,42 @@
 import { Link } from "@tanstack/react-router";
+import { BrandMark } from "./site-header";
 
 export function SiteFooter() {
   return (
-    <footer className="border-t border-cinema-line">
-      <div className="mx-auto flex w-full max-w-6xl flex-col gap-6 px-6 py-12 sm:flex-row sm:items-center sm:justify-between">
+    <footer className="border-t border-border bg-card/40">
+      <div className="mx-auto grid w-full max-w-6xl gap-10 px-6 py-14 sm:grid-cols-4">
         <div>
-          <p className="font-[family-name:var(--font-display)] text-lg text-cinema-ink">REELZOY</p>
-          <p className="mt-1 text-sm text-cinema-muted">
-            AI-assisted video editing for teams who still care about the cut.
-          </p>
+          <BrandMark />
+          <p className="mt-2 text-sm text-muted-foreground">Turn Your Ideas Into Viral Videos</p>
         </div>
-        <div className="flex items-center gap-6 text-sm">
-          <a
-            href="#journey"
-            className="rounded-sm text-cinema-muted transition-colors hover:text-cinema-ink focus-visible:ring-2 focus-visible:ring-cinema-ember focus-visible:outline-none"
-          >
-            The journey
-          </a>
-          <Link
-            to="/login"
-            className="rounded-sm text-cinema-ink underline underline-offset-4 focus-visible:ring-2 focus-visible:ring-cinema-ember focus-visible:outline-none"
-          >
-            Log in
-          </Link>
+        <div>
+          <p className="text-sm font-semibold">Product</p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li><Link to="/features" className="hover:text-foreground">Features</Link></li>
+            <li><Link to="/templates" className="hover:text-foreground">Templates</Link></li>
+            <li><Link to="/pricing" className="hover:text-foreground">Pricing</Link></li>
+          </ul>
+        </div>
+        <div>
+          <p className="text-sm font-semibold">App</p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li><Link to="/dashboard" className="hover:text-foreground">Dashboard</Link></li>
+            <li><Link to="/upload" className="hover:text-foreground">Upload</Link></li>
+            <li><Link to="/highlights" className="hover:text-foreground">AI Highlights</Link></li>
+          </ul>
+        </div>
+        <div>
+          <p className="text-sm font-semibold">Account</p>
+          <ul className="mt-3 space-y-2 text-sm text-muted-foreground">
+            <li><Link to="/login" className="hover:text-foreground">Login</Link></li>
+            <li><Link to="/register" className="hover:text-foreground">Sign up</Link></li>
+            <li><Link to="/forgot-password" className="hover:text-foreground">Reset password</Link></li>
+          </ul>
         </div>
       </div>
+      <p className="border-t border-border py-6 text-center text-xs text-muted-foreground">
+        © {new Date().getFullYear()} REELZOY. All rights reserved.
+      </p>
     </footer>
   );
 }
