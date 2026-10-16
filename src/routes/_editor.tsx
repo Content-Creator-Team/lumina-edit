@@ -28,7 +28,7 @@ function EditorLayout() {
   }
 
   return (
-    <div className="flex h-screen flex-col overflow-hidden bg-background text-foreground font-[family-name:var(--font-body)]">
+    <div className="editor-ambient flex h-screen flex-col overflow-hidden bg-background text-foreground font-[family-name:var(--font-body)]">
       <Outlet />
     </div>
   );

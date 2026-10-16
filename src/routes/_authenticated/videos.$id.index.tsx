@@ -92,7 +92,7 @@ function VideoDetailPage() {
           return (
             <li
               key={stage.key}
-              className="flex items-start gap-3 rounded-lg border border-border p-4"
+              className="surface-card flex items-start gap-3 rounded-xl p-4"
             >
               <span className="mt-0.5" aria-hidden="true">
                 {state === "complete" ? (
@@ -126,11 +126,18 @@ function VideoDetailPage() {
       </ol>
 
       <div className="mt-8 flex flex-wrap gap-3">
-        <Button asChild disabled={!planReady}>
-          <Link to="/videos/$id/review" params={{ id }}>
-            {planReady ? "Review edit plan" : "Plan not ready yet"}
-          </Link>
-        </Button>
+        {planReady ? (
+          <Button asChild className="bg-brand-gradient text-primary-foreground">
+            <Link to="/videos/$id/plan" params={{ id }}>View AI plan</Link>
+          </Button>
+        ) : (
+          <Button disabled>Plan not ready yet</Button>
+        )}
+        {planReady && (
+          <Button asChild variant="outline">
+            <Link to="/videos/$id/review" params={{ id }}>Review & edit plan</Link>
+          </Button>
+        )}
         {planReady && (
           <Button asChild variant="secondary">
             <Link to="/editor/$videoId" params={{ videoId: id }}>
