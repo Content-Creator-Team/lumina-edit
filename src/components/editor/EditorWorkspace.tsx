@@ -46,12 +46,14 @@ function EditorToolbar({
   saving,
   saveError,
   lastSavedAt,
+  onOpenDrawer,
 }: {
   videoName: string;
   onSave: () => void;
   saving: boolean;
   saveError: string | null;
   lastSavedAt: number | null;
+  onOpenDrawer?: () => void;
 }) {
   const {
     undo, redo, toggleCopilot, showCopilot, splitClip, currentTime, selectedClipId,
