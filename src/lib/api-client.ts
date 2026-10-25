@@ -23,6 +23,27 @@ import type {
   Transcript,
   TranslateJob,
   Video,
+  AIDecision,
+  AnalyticsSummary,
+  Chapters,
+  DesignThumbnailsRequest,
+  EditOptions,
+  FeedbackInput,
+  Highlight,
+  MusicStyles,
+  MusicTrack,
+  NotificationsResponse,
+  TemplateLibrary,
+  TrimRequest,
+  TrimResponse,
+  UploadOptions,
+  Usage,
+  UserPreferences,
+  UserPreferencesData,
+  VideoAnalysis,
+  VideoComment,
+  VideoPatch,
+  VideoProgress,
 } from "./api-types";
 
 export const API_BASE_URL = ((import.meta.env["VITE_API_URL"] as string | undefined) ?? "").replace(
@@ -265,6 +286,112 @@ export const api = {
 
   exportCaptions: (videoId: string, format: "srt" | "vtt" = "srt") =>
     apiDownload(`/api/v1/videos/${videoId}/captions/export?format=${format}`),
+
+  /* ------------------------------------------------------ videos (creative) */
+  updateVideo: (videoId: string, patch: VideoPatch) =>
+    apiRequest<Video>(`/api/v1/videos/${videoId}`, { method: "PATCH", body: patch }),
+  deleteVideo: (videoId: string) =>
+    apiRequest<void>(`/api/v1/videos/${videoId}`, { method: "DELETE" }),
+  reprocessVideo: (
+    videoId: string,
+    body: { template_id?: string | null; edit_options?: EditOptions | null; goal?: string | null } = {},
+  ) => apiRequest<Video>(`/api/v1/videos/${videoId}/reprocess`, { method: "POST", body }),
+  combineVideos: (body: {
+    video_ids: string[];
+    title?: string;
+    goal?: string | null;
+    template_id?: string | null;
+    options?: EditOptions;
+  }) =>
+    apiRequest<{ video_id: string; status?: string; message?: string }>("/api/v1/videos/combine", {
+      method: "POST",
+      body,
+    }),
+  getVideoProgress: (videoId: string) =>
+    apiRequest<VideoProgress>(`/api/v1/videos/${videoId}/progress`),
+  getVideoAnalysis: (videoId: string) =>
+    apiRequest<VideoAnalysis>(`/api/v1/videos/${videoId}/analysis`),
+
+  /* ---------------------------------------------------------- templates/music */
+  listTemplates: () => apiRequest<TemplateLibrary>("/api/v1/templates"),
+  listMusicStyles: () => apiRequest<MusicStyles>("/api/v1/music/styles"),
+  listMusicTracks: (params: { genre?: string; mood?: string; q?: string; refresh?: boolean } = {}) => {
+    const qs = new URLSearchParams();
+    Object.entries(params).forEach(([k, v]) => {
+      if (v !== undefined && v !== "") qs.set(k, String(v));
+    });
+    const suffix = qs.toString() ? `?${qs}` : "";
+    return apiRequest<MusicTrack[] | { tracks: MusicTrack[] }>(`/api/v1/music/tracks${suffix}`);
+  },
+  uploadMusicTrack: (file: File, meta: Record<string, string | number | boolean | undefined>) => {
+    const form = new FormData();
+    form.append("file", file, file.name);
+    Object.entries(meta).forEach(([k, v]) => {
+      if (v !== undefined) form.append(k, String(v));
+    });
+    return apiRequest<MusicTrack>("/api/v1/music/tracks", { method: "POST", formData: form });
+  },
+  deleteMusicTrack: (trackId: string) =>
+    apiRequest<void>(`/api/v1/music/tracks/${trackId}`, { method: "DELETE" }),
+
+  /* -------------------------------------------------------------------- plans */
+  createCreativePlan: (videoId: string, body: { template_id?: string | null; options?: EditOptions } = {}) =>
+    apiRequest<EditPlan>(`/api/v1/videos/${videoId}/creative-plan`, { method: "POST", body }),
+  putPlanDecisions: (planId: string, decisions: Record<string, AIDecision | null>) =>
+    apiRequest<EditPlan>(`/api/v1/edit-plans/${planId}/decisions`, {
+      method: "PUT",
+      body: { decisions },
+    }),
+  getChapters: (planId: string) => apiRequest<Chapters>(`/api/v1/edit-plans/${planId}/chapters`),
+  cancelRenderJob: (jobId: string) =>
+    apiRequest<RenderJob>(`/api/v1/render-jobs/${jobId}/cancel`, { method: "POST" }),
+  retryRenderJob: (jobId: string) =>
+    apiRequest<RenderJob>(`/api/v1/render-jobs/${jobId}/retry`, { method: "POST" }),
+
+  /* --------------------------------------------------------------- thumbnails */
+  designThumbnails: (videoId: string, body: DesignThumbnailsRequest) =>
+    apiRequest<GeneratedThumbnail[]>(`/api/v1/videos/${videoId}/thumbnails/design`, {
+      method: "POST",
+      body,
+    }),
+  selectThumbnail: (videoId: string, thumbId: string) =>
+    apiRequest<GeneratedThumbnail[]>(`/api/v1/videos/${videoId}/thumbnails/${thumbId}/select`, {
+      method: "POST",
+    }),
+
+  /* ---------------------------------------------------------- highlights/trim */
+  getHighlights: (videoId: string, body: { goal?: string; count?: number; clip_seconds?: number } = {}) =>
+    apiRequest<{ highlights: Highlight[] }>(`/api/v1/videos/${videoId}/highlights`, {
+      method: "POST",
+      body,
+    }),
+  trimVideo: (videoId: string, body: TrimRequest) =>
+    apiRequest<TrimResponse>(`/api/v1/videos/${videoId}/trim`, { method: "POST", body }),
+
+  /* ------------------------------------------------------------------- collab */
+  listComments: (videoId: string) => apiRequest<VideoComment[]>(`/api/v1/videos/${videoId}/comments`),
+  createComment: (videoId: string, body: { time: number; text: string }) =>
+    apiRequest<VideoComment>(`/api/v1/videos/${videoId}/comments`, { method: "POST", body }),
+  updateComment: (commentId: string, body: { time?: number; text?: string }) =>
+    apiRequest<VideoComment>(`/api/v1/comments/${commentId}`, { method: "PATCH", body }),
+  deleteComment: (commentId: string) =>
+    apiRequest<void>(`/api/v1/comments/${commentId}`, { method: "DELETE" }),
+  applyComment: (commentId: string) =>
+    apiRequest<EditPlan>(`/api/v1/comments/${commentId}/apply`, { method: "POST" }),
+
+  getPreferences: () => apiRequest<UserPreferences>("/api/v1/me/preferences"),
+  putPreferences: (body: UserPreferencesData) =>
+    apiRequest<UserPreferences>("/api/v1/me/preferences", { method: "PUT", body }),
+  addPrompt: (prompt: string) =>
+    apiRequest<UserPreferences>("/api/v1/me/prompts", { method: "POST", body: { prompt } }),
+  clearStyleMemory: () => apiRequest<UserPreferences>("/api/v1/me/style-memory", { method: "DELETE" }),
+  getUsage: () => apiRequest<Usage>("/api/v1/me/usage"),
+  getNotifications: () => apiRequest<NotificationsResponse>("/api/v1/me/notifications"),
+  markNotificationsSeen: () =>
+    apiRequest<NotificationsResponse>("/api/v1/me/notifications/seen", { method: "POST" }),
+  sendFeedback: (body: FeedbackInput) =>
+    apiRequest<unknown>("/api/v1/feedback", { method: "POST", body }),
+  getAnalyticsSummary: () => apiRequest<AnalyticsSummary>("/api/v1/analytics/summary"),
 };
 
 /** Binary download helper (captions SRT/VTT). */
@@ -318,6 +445,7 @@ export function uploadVideoFile(
   file: File,
   onProgress: (percent: number) => void,
   signal?: AbortSignal,
+  uploadOptions?: UploadOptions,
 ): Promise<string> {
   if (isDemoMode()) {
     return new Promise<string>((resolve, reject) => {
@@ -330,7 +458,7 @@ export function uploadVideoFile(
           demoRequest<{ video_id: string }>({
             path: "/api/v1/videos/upload",
             method: "POST",
-            body: { filename: file.name, size: file.size },
+            body: { filename: file.name, size: file.size, ...(uploadOptions ?? {}) },
           })
             .then((r) => resolve(r.video_id))
             .catch(reject);
@@ -352,6 +480,10 @@ export function uploadVideoFile(
   return new Promise<string>((resolve, reject) => {
     const formData = new FormData();
     formData.append("file", file, file.name);
+    if (uploadOptions?.title) formData.append("title", uploadOptions.title);
+    if (uploadOptions?.goal) formData.append("goal", uploadOptions.goal);
+    if (uploadOptions?.template_id) formData.append("template_id", uploadOptions.template_id);
+    if (uploadOptions?.options) formData.append("options", JSON.stringify(uploadOptions.options));
 
     const xhr = new XMLHttpRequest();
     xhr.open("POST", `${API_BASE_URL}/api/v1/videos/upload`);
@@ -436,5 +568,92 @@ export function uploadToPresignedUrl(
     xhr.onabort = () => reject(new DOMException("Upload cancelled", "AbortError"));
     signal?.addEventListener("abort", () => xhr.abort());
     xhr.send(file);
+  });
+}
+
+export type CombineResponse = { video_id: string; status?: string; message?: string };
+
+/**
+ * Upload 2–20 files that the backend combines (in order) into one video.
+ * Progress covers the whole batch.
+ */
+export function uploadVideoBatch(
+  files: File[],
+  onProgress: (percent: number) => void,
+  signal?: AbortSignal,
+  uploadOptions?: UploadOptions,
+): Promise<string> {
+  if (isDemoMode()) {
+    return new Promise<string>((resolve, reject) => {
+      let percent = 0;
+      const timer = setInterval(() => {
+        percent = Math.min(100, percent + 5 + Math.random() * 6);
+        onProgress(Math.round(percent));
+        if (percent >= 100) {
+          clearInterval(timer);
+          demoRequest<CombineResponse>({
+            path: "/api/v1/videos/upload-batch",
+            method: "POST",
+            body: { filenames: files.map((f) => f.name), ...(uploadOptions ?? {}) },
+          })
+            .then((r) => resolve(r.video_id))
+            .catch(reject);
+        }
+      }, 160);
+      signal?.addEventListener("abort", () => {
+        clearInterval(timer);
+        reject(new DOMException("Upload cancelled", "AbortError"));
+      });
+    });
+  }
+  if (!isApiConfigured()) {
+    return Promise.reject(new ApiError(0, "The API base URL is not configured. Set VITE_API_URL."));
+  }
+  return new Promise<string>((resolve, reject) => {
+    const formData = new FormData();
+    files.forEach((f) => formData.append("files", f, f.name));
+    if (uploadOptions?.title) formData.append("title", uploadOptions.title);
+    if (uploadOptions?.goal) formData.append("goal", uploadOptions.goal);
+    if (uploadOptions?.template_id) formData.append("template_id", uploadOptions.template_id);
+    if (uploadOptions?.options) formData.append("options", JSON.stringify(uploadOptions.options));
+
+    const xhr = new XMLHttpRequest();
+    xhr.open("POST", `${API_BASE_URL}/api/v1/videos/upload-batch`);
+    const token = getAccessToken();
+    if (token) xhr.setRequestHeader("authorization", `Bearer ${token}`);
+    xhr.setRequestHeader("accept", "application/json");
+    xhr.upload.onprogress = (event) => {
+      if (event.lengthComputable) onProgress(Math.round((event.loaded / event.total) * 100));
+    };
+    xhr.onload = () => {
+      if (xhr.status === 202 || xhr.status === 200) {
+        try {
+          resolve((JSON.parse(xhr.responseText) as CombineResponse).video_id ?? "");
+        } catch {
+          reject(new ApiError(xhr.status, "Unexpected response from server."));
+        }
+        return;
+      }
+      if (xhr.status === 401) {
+        reject(new ApiError(401, "Your session expired. Please sign in again."));
+        return;
+      }
+      let detail = `Upload failed (${xhr.status}).`;
+      try {
+        const body = JSON.parse(xhr.responseText) as { detail?: unknown };
+        if (body.detail) {
+          detail = Array.isArray(body.detail)
+            ? (body.detail as { msg?: string }[]).map((e) => e.msg ?? String(e)).join("; ")
+            : String(body.detail);
+        }
+      } catch {
+        /* ignore */
+      }
+      reject(new ApiError(xhr.status, detail));
+    };
+    xhr.onerror = () => reject(new ApiError(0, "The upload connection dropped."));
+    xhr.onabort = () => reject(new DOMException("Upload cancelled", "AbortError"));
+    signal?.addEventListener("abort", () => xhr.abort());
+    xhr.send(formData);
   });
 }

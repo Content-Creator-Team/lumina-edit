@@ -1,9 +1,12 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import {
   ChevronLeft,
   ChevronRight,
   Download,
   FileVideo,
+  Loader2,
+  Server,
   Pause,
   Play,
   RotateCcw,
@@ -20,8 +23,11 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Slider } from "@/components/ui/slider";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Tooltip, TooltipContent, TooltipTrigger } from "@/components/ui/tooltip";
-import { formatTimecode } from "@/lib/queries";
+import { ApiError, api } from "@/lib/api-client";
+import { formatTimecode, videoTitle, videosQuery } from "@/lib/queries";
+import { isDemoMode } from "@/lib/runtime-config";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/trimmer")({
@@ -168,7 +174,43 @@ function TrimmerPage() {
     setSegments(next.sort((a, b) => a.start - b.start));
   }, []);
 
+  // Live mode: trim one of the user's uploaded videos and render it on the server.
+  const live = !isDemoMode();
+  const videosQ = useQuery({ ...videosQuery(), enabled: live });
+  const serverVideos = (videosQ.data ?? []).filter(
+    (v) => !["failed", "uploading", "pending"].includes(String(v.status).toLowerCase()) && (v.playback_url || v.original_url),
+  );
+  const [serverVideoId, setServerVideoId] = useState<string | null>(null);
+  const serverVideo = serverVideos.find((v) => v.id === serverVideoId) ?? null;
+
+  function chooseServerVideo(id: string) {
+    const v = serverVideos.find((x) => x.id === id);
+    if (!v) return;
+    if (videoUrl.startsWith("blob:")) URL.revokeObjectURL(videoUrl);
+    setError(null);
+    setFile(null);
+    setServerVideoId(id);
+    setIsPlaying(false);
+    setVideoUrl(v.playback_url ?? v.original_url ?? "");
+  }
+
+  const serverRender = useMutation({
+    mutationFn: () => {
+      if (!serverVideoId) throw new Error("Choose an uploaded video first.");
+      return api.trimVideo(serverVideoId, {
+        segments: segments.map((s) => ({
+          start: Number(s.trimStart.toFixed(2)),
+          end: Number(s.trimEnd.toFixed(2)),
+          label: s.label,
+        })),
+        render: true,
+      });
+    },
+    onSuccess: () => posthog.capture("trim_server_render_requested", { segment_count: segments.length }),
+  });
+
   function loadDemo() {
+    setServerVideoId(null);
     setError(null);
     setUploading(true);
     setUploadProgress(0);
@@ -201,6 +243,7 @@ function TrimmerPage() {
     }
 
     setError(null);
+    setServerVideoId(null);
     setFile(nextFile);
     setUploading(true);
     setUploadProgress(0);
@@ -233,7 +276,7 @@ function TrimmerPage() {
       end: nextDuration,
       trimStart: 0,
       trimEnd: nextDuration,
-      label: file?.name.replace(/\.[^.]+$/, "") || "Selected clip",
+      label: (serverVideo ? videoTitle(serverVideo) : file?.name.replace(/\.[^.]+$/, "")) || "Selected clip",
     };
     setSegments([initial]);
     setHistory([{ segments: [{ ...initial }] }]);
@@ -391,6 +434,21 @@ function TrimmerPage() {
           </p>
         </div>
         <div className="flex flex-wrap items-center gap-2">
+          {live && (
+            <Select value={serverVideoId ?? ""} onValueChange={chooseServerVideo}>
+              <SelectTrigger className="w-60" aria-label="Use an uploaded video">
+                <SelectValue placeholder={videosQ.isPending ? "Loading videos…" : "Use an uploaded video"} />
+              </SelectTrigger>
+              <SelectContent>
+                {serverVideos.length === 0 && (
+                  <SelectItem value="__none" disabled>No uploaded videos yet</SelectItem>
+                )}
+                {serverVideos.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>{videoTitle(v)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          )}
           <Button variant="outline" onClick={loadDemo} disabled={uploading}>
             <FileVideo className="size-4" aria-hidden="true" />
             Load demo reel
@@ -559,10 +617,38 @@ function TrimmerPage() {
               </TooltipTrigger>
               <TooltipContent>Zoom in</TooltipContent>
             </Tooltip>
-            <Button onClick={exportCutList}>
+            <Button onClick={exportCutList} variant={serverVideoId ? "outline" : "default"}>
               <Download className="size-4" aria-hidden="true" />
               Export cut list
             </Button>
+            {live && serverVideoId && (
+              <Button onClick={() => serverRender.mutate()} disabled={serverRender.isPending || segments.length === 0}>
+                {serverRender.isPending ? (
+                  <Loader2 className="size-4 animate-spin" aria-hidden="true" />
+                ) : (
+                  <Server className="size-4" aria-hidden="true" />
+                )}
+                Render on server
+              </Button>
+            )}
+            {serverRender.isSuccess && serverVideoId && (
+              <p role="status" className="w-full text-xs text-muted-foreground">
+                Render queued.{" "}
+                <Link
+                  to="/videos/$id/render"
+                  params={{ id: serverVideoId }}
+                  search={serverRender.data.render_job ? { job: serverRender.data.render_job.id } : {}}
+                  className="underline underline-offset-2"
+                >
+                  Track it on the render page
+                </Link>
+              </p>
+            )}
+            {serverRender.isError && (
+              <p role="alert" className="w-full text-xs text-destructive">
+                {serverRender.error instanceof ApiError ? serverRender.error.detail : String(serverRender.error)}
+              </p>
+            )}
           </div>
         </div>
 

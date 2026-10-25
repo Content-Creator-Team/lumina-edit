@@ -1,10 +1,38 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
-import { CheckCircle2, Clock, Film, XCircle } from "lucide-react";
+import { CheckCircle2, Clock, Film, Gauge, ListChecks, Timer, XCircle } from "lucide-react";
 
 import { ErrorState, LoadingState } from "@/components/app/query-states";
 import { Reveal } from "@/components/landing/reveal";
-import { videosQuery } from "@/lib/queries";
+import { analyticsSummaryQuery, videosQuery } from "@/lib/queries";
+import { isDemoMode } from "@/lib/runtime-config";
+
+function Breakdown({ title, data, empty }: { title: string; data: Record<string, number>; empty: string }) {
+  const rows = Object.entries(data).sort((a, b) => b[1] - a[1]);
+  const total = rows.reduce((a, [, n]) => a + n, 0) || 1;
+  return (
+    <div className="surface-card h-full rounded-2xl p-6">
+      <p className="text-sm font-semibold">{title}</p>
+      {rows.length === 0 ? (
+        <p className="mt-4 text-sm text-muted-foreground">{empty}</p>
+      ) : (
+        <ul className="mt-4 space-y-3">
+          {rows.map(([s, n]) => (
+            <li key={s}>
+              <div className="flex justify-between text-sm"><span className="capitalize">{s.replace(/_/g, " ")}</span><span>{n}</span></div>
+              <div className="mt-1 h-2 rounded-full bg-muted">
+                <div className="bg-brand-gradient h-full rounded-full" style={{ width: `${(n / total) * 100}%` }} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  );
+}
+
+const secs = (v: number | null | undefined) =>
+  v == null ? "—" : v < 90 ? `${Math.round(v)}s` : `${Math.round(v / 60)}m`;
 
 export const Route = createFileRoute("/_authenticated/analytics")({
   head: () => ({
@@ -22,38 +50,52 @@ export const Route = createFileRoute("/_authenticated/analytics")({
 });
 
 function AnalyticsPage() {
-  const q = useQuery(videosQuery());
-  if (q.isPending) return <LoadingState label="Loading analytics…" />;
-  if (q.isError) return <ErrorState error={q.error} onRetry={() => void q.refetch()} />;
+  const q = useQuery({ ...videosQuery(), enabled: isDemoMode() });
+  const summaryQ = useQuery(analyticsSummaryQuery());
+  if (summaryQ.isPending) return <LoadingState label="Loading analytics…" />;
+  if (summaryQ.isError) return <ErrorState error={summaryQ.error} onRetry={() => void summaryQ.refetch()} />;
 
-  const videos = q.data;
+  const summary = summaryQ.data;
+  const videos = q.data ?? [];
   const by: Record<string, number> = {};
-  for (const v of videos) by[String(v.status).toLowerCase()] = (by[String(v.status).toLowerCase()] ?? 0) + 1;
-  const done = (by["complete"] ?? 0) + (by["approved"] ?? 0) + (by["plan_ready"] ?? 0) + (by["ready"] ?? 0);
-  const failed = by["failed"] ?? 0;
-  const minutes = Math.round(videos.reduce((a, v) => a + (v.duration ?? 0), 0) / 60);
+  for (const [k, n] of Object.entries(summary.videos.by_status)) by[k.toLowerCase()] = (by[k.toLowerCase()] ?? 0) + n;
+  const renders = summary.renders;
 
   // Uploads per day, last 14 days, from real created_at values.
-  const days = Array.from({ length: 14 }, (_, i) => {
-    const d = new Date();
-    d.setHours(0, 0, 0, 0);
-    d.setDate(d.getDate() - (13 - i));
-    return d;
-  });
-  const perDay = days.map((d) =>
-    videos.filter((v) => {
-      const t = new Date(v.created_at ?? v.uploaded_at ?? 0);
-      return t >= d && t.getTime() < d.getTime() + 864e5;
-    }).length,
-  );
+  // Live: server-side daily counts. Demo / older backends: derive from the video list.
+  const byDay = !isDemoMode() && summary.uploads_by_day?.length ? summary.uploads_by_day : null;
+  const days = byDay
+    ? byDay.map((d) => new Date(`${d.date}T00:00:00`))
+    : Array.from({ length: 14 }, (_, i) => {
+        const d = new Date();
+        d.setHours(0, 0, 0, 0);
+        d.setDate(d.getDate() - (13 - i));
+        return d;
+      });
+  const perDay = byDay
+    ? byDay.map((d) => d.count)
+    : days.map(
+        (d) =>
+          videos.filter((v) => {
+            const t = new Date(v.created_at ?? v.uploaded_at ?? 0);
+            return t >= d && t.getTime() < d.getTime() + 864e5;
+          }).length,
+      );
   const max = Math.max(...perDay, 1);
-  const statuses = Object.entries(by).sort((a, b) => b[1] - a[1]);
 
   const kpis = [
-    { icon: Film, label: "Videos", value: videos.length },
-    { icon: Clock, label: "Footage (min)", value: minutes },
-    { icon: CheckCircle2, label: "Plans ready or done", value: done },
-    { icon: XCircle, label: "Failed", value: failed },
+    { icon: Film, label: "Videos", value: summary.videos.total },
+    { icon: Clock, label: "Footage (min)", value: Math.round(summary.videos.minutes_uploaded) },
+    { icon: Timer, label: "Avg. processing", value: secs(summary.videos.avg_processing_seconds) },
+    { icon: ListChecks, label: `Plans · ${summary.plans.revisions} revisions`, value: summary.plans.total },
+    { icon: CheckCircle2, label: `Renders completed of ${renders.total}`, value: renders.completed },
+    { icon: XCircle, label: "Renders failed", value: renders.failed },
+    {
+      icon: Gauge,
+      label: "Render success rate",
+      value: renders.success_rate == null ? "—" : `${Math.round((renders.success_rate > 1 ? renders.success_rate / 100 : renders.success_rate) * 100)}%`,
+    },
+    { icon: Clock, label: `Minutes rendered · avg ${secs(renders.avg_render_seconds)}`, value: Math.round(renders.minutes_rendered) },
   ];
 
   return (
@@ -62,7 +104,7 @@ function AnalyticsPage() {
         <h1 className="font-[family-name:var(--font-display)] text-3xl font-bold">
           Workspace <span className="text-brand-gradient">analytics</span>
         </h1>
-        <p className="mt-1 text-sm text-muted-foreground">Calculated from the videos in your workspace. Views and engagement need a publishing integration.</p>
+        <p className="mt-1 text-sm text-muted-foreground">Processing, planning and render activity for your workspace. Views and engagement need a publishing integration.</p>
       </Reveal>
 
       <div className="mt-8 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -96,23 +138,16 @@ function AnalyticsPage() {
           </div>
         </Reveal>
         <Reveal delay={180}>
-          <div className="surface-card h-full rounded-2xl p-6">
-            <p className="text-sm font-semibold">By status</p>
-            {statuses.length === 0 ? (
-              <p className="mt-4 text-sm text-muted-foreground">No videos yet.</p>
-            ) : (
-              <ul className="mt-4 space-y-3">
-                {statuses.map(([s, n]) => (
-                  <li key={s}>
-                    <div className="flex justify-between text-sm"><span className="capitalize">{s.replace("_", " ")}</span><span>{n}</span></div>
-                    <div className="mt-1 h-2 rounded-full bg-muted">
-                      <div className="bg-brand-gradient h-full rounded-full" style={{ width: `${(n / videos.length) * 100}%` }} />
-                    </div>
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
+          <Breakdown title="Videos by status" data={by} empty="No videos yet." />
+        </Reveal>
+      </div>
+
+      <div className="mt-6 grid gap-6 md:grid-cols-2">
+        <Reveal delay={220}>
+          <Breakdown title="Templates used" data={summary.plans.templates} empty="No plans yet." />
+        </Reveal>
+        <Reveal delay={260}>
+          <Breakdown title="Content types" data={summary.videos.content_types} empty="Nothing analysed yet." />
         </Reveal>
       </div>
     </div>

@@ -6,6 +6,7 @@ import {
   LayoutGrid,
   Loader2,
   LogOut,
+  Music,
   Palette,
   Scissors,
   Settings,
@@ -14,6 +15,7 @@ import {
 } from "lucide-react";
 import { useEffect, useRef } from "react";
 
+import { FeedbackButton, NotificationsBell, UsagePill } from "@/components/app/header-extras";
 import { DemoBadge } from "@/components/demo-badge";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { Button } from "@/components/ui/button";
@@ -42,6 +44,7 @@ const NAV = [
 
 const MORE_NAV = [
   { to: "/trimmer", label: "Trimmer", icon: Scissors },
+  { to: "/music", label: "Music library", icon: Music },
   { to: "/brand", label: "Brand kit", icon: Palette },
   { to: "/settings", label: "Settings", icon: Settings },
 ] as const;
@@ -128,6 +131,7 @@ function AuthenticatedLayout() {
               Demo plan · unlimited credits
             </Link>
           )}
+          {!isDemoMode() && <UsagePill className="hidden lg:inline-flex" />}
 
           <nav aria-label="Primary" className="flex items-center gap-1">
             {NAV.map((item) => {
@@ -182,6 +186,8 @@ function AuthenticatedLayout() {
             <span className="hidden text-sm text-muted-foreground md:inline">
               {user?.name ?? user?.email}
             </span>
+            <FeedbackButton />
+            <NotificationsBell />
             <ThemeToggle />
             <Button
               variant="ghost"

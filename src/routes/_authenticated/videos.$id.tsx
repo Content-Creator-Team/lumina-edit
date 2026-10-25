@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 
 import { StatusBadge } from "@/components/app/status-badge";
+import { VideoActionsMenu } from "@/components/app/video-actions-menu";
 import { videoQuery, videoTitle } from "@/lib/queries";
 import { cn } from "@/lib/utils";
 
@@ -45,6 +46,11 @@ function VideoWorkspaceLayout() {
             {video.data ? videoTitle(video.data) : "Loading…"}
           </h1>
           {video.data && <StatusBadge status={video.data.status} />}
+          {video.data && (
+            <span className="ml-auto">
+              <VideoActionsMenu video={video.data} />
+            </span>
+          )}
         </div>
         <nav aria-label="Video sections" className="-mx-1 mt-3 flex gap-1 overflow-x-auto pb-0.5">
           {TABS.map((tab) => {

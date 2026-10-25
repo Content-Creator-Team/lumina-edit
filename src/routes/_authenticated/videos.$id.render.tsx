@@ -1,15 +1,15 @@
-import { useMutation, useQuery } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
-import { Clapperboard, Download, Loader2 } from "lucide-react";
+import { Clapperboard, Download } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
 import { useEffect, useState } from "react";
 
 import { ErrorState, LoadingState } from "@/components/app/query-states";
 import { StatusBadge } from "@/components/app/status-badge";
 import { Button } from "@/components/ui/button";
-import { Progress } from "@/components/ui/progress";
-import { ApiError, api } from "@/lib/api-client";
-import { editPlanQuery, isTerminal, renderJobQuery } from "@/lib/queries";
+import { RenderJobStatus } from "@/components/app/render-job-status";
+import { api } from "@/lib/api-client";
+import { isTerminal, renderJobQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/videos/$id/render")({
   validateSearch: (search: Record<string, unknown>): { job?: string } =>
@@ -44,7 +44,6 @@ function RenderPage() {
   const navigate = useNavigate();
   const posthog = usePostHog();
 
-  const planQuery = useQuery(editPlanQuery(id));
   const jobsListQ = useQuery({
     queryKey: ["render-jobs", id],
     queryFn: () => api.listRenderJobs(id),
@@ -72,23 +71,6 @@ function RenderPage() {
 
   const status = String(jobQuery.data?.status ?? "").toLowerCase();
   const elapsed = useElapsed(Boolean(resolvedJobId) && !isTerminal(status));
-
-  const retry = useMutation({
-    mutationFn: async () => {
-      if (!planQuery.data) throw new ApiError(0, "The current plan could not be loaded.");
-      return api.approvePlan(planQuery.data.id);
-    },
-    onSuccess: (result) => {
-      const nextJob = result.render_job_id ?? result.job_id ?? result.id;
-      if (nextJob) {
-        void navigate({
-          to: "/videos/$id/render",
-          params: { id },
-          search: { job: nextJob },
-        });
-      }
-    },
-  });
 
   return (
     <div className="mx-auto max-w-3xl">
@@ -135,20 +117,13 @@ function RenderPage() {
             )}
           </div>
 
-          {!isTerminal(status) &&
-            (typeof jobQuery.data.progress === "number" ? (
-              <div>
-                <Progress value={jobQuery.data.progress} aria-label="Render progress" />
-                <p className="mt-2 text-xs text-muted-foreground">
-                  {Math.round(jobQuery.data.progress)}% complete
-                </p>
-              </div>
-            ) : (
-              <p className="flex items-center gap-2 text-sm text-muted-foreground">
-                <Loader2 className="size-4 animate-spin" aria-hidden="true" />
-                Rendering — this job doesn't report granular progress, so we'll keep checking.
-              </p>
-            ))}
+          <RenderJobStatus
+            jobId={jobQuery.data.id}
+            onRetried={(next) => {
+              posthog.capture("render_retry_requested");
+              void navigate({ to: "/videos/$id/render", params: { id }, search: { job: next.id } });
+            }}
+          />
 
           {status === "complete" && jobQuery.data.output_url && (
             <div className="space-y-4">
@@ -172,29 +147,6 @@ function RenderPage() {
             </div>
           )}
 
-          {status === "failed" && (
-            <div role="alert" className="rounded-md border border-destructive/40 p-4">
-              <p className="text-sm text-foreground">
-                {jobQuery.data.error_message ?? jobQuery.data.error ?? "The render failed before it finished."}
-              </p>
-              <Button
-                className="mt-4"
-                onClick={() => {
-                  posthog.capture("render_retry_requested");
-                  retry.mutate();
-                }}
-                disabled={retry.isPending || !planQuery.data}
-              >
-                {retry.isPending && <Loader2 className="size-4 animate-spin" aria-hidden="true" />}
-                Retry render with the same plan
-              </Button>
-              {retry.isError && (
-                <p role="alert" className="mt-3 text-sm text-muted-foreground">
-                  {(retry.error as Error).message}
-                </p>
-              )}
-            </div>
-          )}
         </div>
       )}
     </div>

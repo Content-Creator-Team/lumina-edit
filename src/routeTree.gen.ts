@@ -24,6 +24,7 @@ import { Route as AuthenticatedAnalyticsRouteImport } from './routes/_authentica
 import { Route as AuthenticatedBrandRouteImport } from './routes/_authenticated/brand'
 import { Route as AuthenticatedDashboardRouteImport } from './routes/_authenticated/dashboard'
 import { Route as AuthenticatedHighlightsRouteImport } from './routes/_authenticated/highlights'
+import { Route as AuthenticatedMusicRouteImport } from './routes/_authenticated/music'
 import { Route as AuthenticatedSettingsRouteImport } from './routes/_authenticated/settings'
 import { Route as AuthenticatedTrimmerRouteImport } from './routes/_authenticated/trimmer'
 import { Route as AuthenticatedUploadRouteImport } from './routes/_authenticated/upload'
@@ -110,6 +111,11 @@ const AuthenticatedHighlightsRoute = AuthenticatedHighlightsRouteImport.update({
   path: '/highlights',
   getParentRoute: () => AuthenticatedRoute,
 } as any)
+const AuthenticatedMusicRoute = AuthenticatedMusicRouteImport.update({
+  id: '/music',
+  path: '/music',
+  getParentRoute: () => AuthenticatedRoute,
+} as any)
 const AuthenticatedSettingsRoute = AuthenticatedSettingsRouteImport.update({
   id: '/settings',
   path: '/settings',
@@ -191,6 +197,7 @@ export interface FileRoutesByFullPath {
   '/brand': typeof AuthenticatedBrandRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/highlights': typeof AuthenticatedHighlightsRoute
+  '/music': typeof AuthenticatedMusicRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/trimmer': typeof AuthenticatedTrimmerRoute
   '/upload': typeof AuthenticatedUploadRoute
@@ -218,6 +225,7 @@ export interface FileRoutesByTo {
   '/brand': typeof AuthenticatedBrandRoute
   '/dashboard': typeof AuthenticatedDashboardRoute
   '/highlights': typeof AuthenticatedHighlightsRoute
+  '/music': typeof AuthenticatedMusicRoute
   '/settings': typeof AuthenticatedSettingsRoute
   '/trimmer': typeof AuthenticatedTrimmerRoute
   '/upload': typeof AuthenticatedUploadRoute
@@ -247,6 +255,7 @@ export interface FileRoutesById {
   '/_authenticated/brand': typeof AuthenticatedBrandRoute
   '/_authenticated/dashboard': typeof AuthenticatedDashboardRoute
   '/_authenticated/highlights': typeof AuthenticatedHighlightsRoute
+  '/_authenticated/music': typeof AuthenticatedMusicRoute
   '/_authenticated/settings': typeof AuthenticatedSettingsRoute
   '/_authenticated/trimmer': typeof AuthenticatedTrimmerRoute
   '/_authenticated/upload': typeof AuthenticatedUploadRoute
@@ -276,6 +285,7 @@ export interface FileRouteTypes {
     | '/brand'
     | '/dashboard'
     | '/highlights'
+    | '/music'
     | '/settings'
     | '/trimmer'
     | '/upload'
@@ -303,6 +313,7 @@ export interface FileRouteTypes {
     | '/brand'
     | '/dashboard'
     | '/highlights'
+    | '/music'
     | '/settings'
     | '/trimmer'
     | '/upload'
@@ -331,6 +342,7 @@ export interface FileRouteTypes {
     | '/_authenticated/brand'
     | '/_authenticated/dashboard'
     | '/_authenticated/highlights'
+    | '/_authenticated/music'
     | '/_authenticated/settings'
     | '/_authenticated/trimmer'
     | '/_authenticated/upload'
@@ -467,6 +479,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedHighlightsRouteImport
       parentRoute: typeof AuthenticatedRoute
     }
+    '/_authenticated/music': {
+      id: '/_authenticated/music'
+      path: '/music'
+      fullPath: '/music'
+      preLoaderRoute: typeof AuthenticatedMusicRouteImport
+      parentRoute: typeof AuthenticatedRoute
+    }
     '/_authenticated/settings': {
       id: '/_authenticated/settings'
       path: '/settings'
@@ -582,6 +601,7 @@ interface AuthenticatedRouteChildren {
   AuthenticatedBrandRoute: typeof AuthenticatedBrandRoute
   AuthenticatedDashboardRoute: typeof AuthenticatedDashboardRoute
   AuthenticatedHighlightsRoute: typeof AuthenticatedHighlightsRoute
+  AuthenticatedMusicRoute: typeof AuthenticatedMusicRoute
   AuthenticatedSettingsRoute: typeof AuthenticatedSettingsRoute
   AuthenticatedTrimmerRoute: typeof AuthenticatedTrimmerRoute
   AuthenticatedUploadRoute: typeof AuthenticatedUploadRoute
@@ -593,6 +613,7 @@ const AuthenticatedRouteChildren: AuthenticatedRouteChildren = {
   AuthenticatedBrandRoute: AuthenticatedBrandRoute,
   AuthenticatedDashboardRoute: AuthenticatedDashboardRoute,
   AuthenticatedHighlightsRoute: AuthenticatedHighlightsRoute,
+  AuthenticatedMusicRoute: AuthenticatedMusicRoute,
   AuthenticatedSettingsRoute: AuthenticatedSettingsRoute,
   AuthenticatedTrimmerRoute: AuthenticatedTrimmerRoute,
   AuthenticatedUploadRoute: AuthenticatedUploadRoute,

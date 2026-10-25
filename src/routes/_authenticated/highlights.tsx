@@ -1,6 +1,6 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Download, Loader2, Play, Sparkles, Trash2, UploadCloud, Wand2 } from "lucide-react";
 import { usePostHog } from "posthog-js/react";
 import { useMemo, useRef, useState } from "react";
@@ -9,9 +9,12 @@ import { toast } from "sonner";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { api } from "@/lib/api-client";
 import { findHighlights, type HighlightSuggestion } from "@/lib/highlights.functions";
-import { formatTimecode } from "@/lib/queries";
+import { formatTimecode, videoTitle, videosQuery } from "@/lib/queries";
+import { isDemoMode } from "@/lib/runtime-config";
 import { cn } from "@/lib/utils";
 
 export const Route = createFileRoute("/_authenticated/highlights")({
@@ -36,6 +39,7 @@ export const Route = createFileRoute("/_authenticated/highlights")({
 });
 
 const MAX_BYTES = 20 * 1024 * 1024;
+const READY = new Set(["ready", "plan_ready", "approved", "rendering", "complete"]);
 
 type Clip = HighlightSuggestion & { id: string; keep: boolean };
 
@@ -50,6 +54,13 @@ function readAsDataUrl(file: File) {
 
 function HighlightsPage() {
   const analyze = useServerFn(findHighlights);
+  // Live mode analyses one of the user's uploaded videos on the backend; the
+  // in-browser Lovable flow (local file → AI server function) is demo-only.
+  const live = !isDemoMode();
+  const videosQ = useQuery({ ...videosQuery(), enabled: live });
+  const readyVideos = (videosQ.data ?? []).filter((v) => READY.has(String(v.status).toLowerCase()));
+  const [sourceId, setSourceId] = useState<string>("");
+  const source = readyVideos.find((v) => v.id === sourceId) ?? null;
   const posthog = usePostHog();
   const inputRef = useRef<HTMLInputElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -66,7 +77,22 @@ function HighlightsPage() {
   const kept = useMemo(() => clips.filter((clip) => clip.keep), [clips]);
 
   const mutation = useMutation({
-    mutationFn: async () => {
+    mutationFn: async (): Promise<{ summary: string; highlights: HighlightSuggestion[] }> => {
+      if (live) {
+        if (!source) throw new Error("Choose one of your videos first.");
+        const result = await api.getHighlights(source.id, { ...(goal.trim() ? { goal: goal.trim() } : {}), count: 6 });
+        return {
+          summary: `${result.highlights.length} moments found in “${videoTitle(source)}”.`,
+          highlights: result.highlights.map((h) => ({
+            title: h.title,
+            start: h.start,
+            end: h.end,
+            reason: h.reason,
+            score: h.score > 1 ? h.score / 100 : h.score,
+            caption: h.caption ?? undefined,
+          })),
+        };
+      }
       if (!file) throw new Error("Choose a video first.");
       posthog.logger.info("highlight_analysis_requested", {
         has_goal: Boolean(goal.trim()),
@@ -136,7 +162,8 @@ function HighlightsPage() {
   function exportClips() {
     posthog.capture("highlights_exported", { clip_count: kept.length });
     const payload = {
-      source: file?.name ?? "video",
+      source: live ? (source ? videoTitle(source) : "video") : (file?.name ?? "video"),
+      video_id: live ? (source?.id ?? null) : null,
       duration,
       generated_at: new Date().toISOString(),
       clips: kept.map(({ title, start, end, caption, reason, score }) => ({
@@ -170,10 +197,39 @@ function HighlightsPage() {
             can edit, preview and export as a cut list.
           </p>
         </div>
-        <Button onClick={() => inputRef.current?.click()}>
-          <UploadCloud className="size-4" aria-hidden="true" />
-          Choose video
-        </Button>
+        {live ? (
+          <div className="w-full sm:w-72">
+            <Label className="text-xs">Video</Label>
+            <Select
+              value={sourceId}
+              onValueChange={(v) => {
+                setSourceId(v);
+                const next = readyVideos.find((x) => x.id === v);
+                setVideoUrl(next?.playback_url ?? next?.original_url ?? null);
+                setDuration(next?.duration ?? 0);
+                setClips([]);
+                setSummary("");
+              }}
+            >
+              <SelectTrigger className="mt-1">
+                <SelectValue placeholder={videosQ.isPending ? "Loading videos…" : "Choose one of your videos"} />
+              </SelectTrigger>
+              <SelectContent>
+                {readyVideos.length === 0 && (
+                  <SelectItem value="__none" disabled>No processed videos yet</SelectItem>
+                )}
+                {readyVideos.map((v) => (
+                  <SelectItem key={v.id} value={v.id}>{videoTitle(v)}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        ) : (
+          <Button onClick={() => inputRef.current?.click()}>
+            <UploadCloud className="size-4" aria-hidden="true" />
+            Choose video
+          </Button>
+        )}
       </div>
 
       <input
@@ -195,6 +251,7 @@ function HighlightsPage() {
         onDrop={(event) => {
           event.preventDefault();
           setDragging(false);
+          if (live) return;
           selectFile(event.dataTransfer.files?.[0] ?? null);
         }}
         className={cn(
@@ -221,7 +278,9 @@ function HighlightsPage() {
             <div className="flex aspect-video flex-col items-center justify-center gap-2 text-center">
               <Sparkles className="size-6 text-muted-foreground" aria-hidden="true" />
               <p className="text-sm text-muted-foreground">
-                Drop a video here, or choose one. Up to 20 MB.
+                {live
+                  ? "Choose one of your processed videos above."
+                  : "Drop a video here, or choose one. Up to 20 MB."}
               </p>
             </div>
           )}
@@ -242,7 +301,9 @@ function HighlightsPage() {
           <dl className="space-y-1 text-sm">
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">File</dt>
-              <dd className="truncate">{file?.name ?? "None selected"}</dd>
+              <dd className="truncate">
+                {live ? (source ? videoTitle(source) : "None selected") : (file?.name ?? "None selected")}
+              </dd>
             </div>
             <div className="flex justify-between gap-4">
               <dt className="text-muted-foreground">Length</dt>
@@ -252,7 +313,7 @@ function HighlightsPage() {
           <Button
             className="w-full"
             onClick={() => mutation.mutate()}
-            disabled={!file || mutation.isPending}
+            disabled={(live ? !source : !file) || mutation.isPending}
           >
             {mutation.isPending ? (
               <Loader2 className="size-4 animate-spin" aria-hidden="true" />

@@ -14,47 +14,37 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { useEditorStore } from "@/lib/editor-store";
 import { api } from "@/lib/api-client";
-import { formatTimecode, transcriptQuery } from "@/lib/queries";
+import { chaptersQuery } from "@/lib/queries";
+import { RenderJobStatus } from "@/components/app/render-job-status";
 
-/** Chapters + a YouTube description drafted from the transcript (client-side). */
-function ChaptersBlock({ videoId }: { videoId: string }) {
-  const q = useQuery({ ...transcriptQuery(videoId), staleTime: 60_000 });
+/** Chapters + a YouTube description from GET /edit-plans/{id}/chapters. */
+function ChaptersBlock({ planId }: { planId: string }) {
+  const q = useQuery({ ...chaptersQuery(planId), staleTime: 60_000 });
   const [copied, setCopied] = useState(false);
 
-  const text = useMemo(() => {
-    const segs = q.data?.segments ?? [];
-    if (segs.length === 0) return null;
-    // One chapter per ~30s of speech, titled by the first words of the segment.
-    const chapters: string[] = [];
-    let last = -30;
-    for (const s of segs) {
-      const start = s.start ?? s.start_time ?? 0;
-      if (start - last >= 30 || chapters.length === 0) {
-        const title = s.text.trim().split(/\s+/).slice(0, 6).join(" ").replace(/[.!?]+$/, "");
-        chapters.push(`${formatTimecode(start)} ${title}`);
-        last = start;
-      }
-      if (chapters.length >= 12) break;
-    }
-    const summary = segs[0] ? segs[0].text.trim().slice(0, 140) : "";
-    return `${summary}${summary.length === 140 ? "…" : ""}\n\nChapters:\n${chapters.join("\n")}`;
-  }, [q.data]);
-
-  if (!text) return null;
+  if (q.isPending) {
+    return (
+      <p className="flex items-center gap-1.5 text-[11px] text-muted-foreground">
+        <Loader2 className="size-3 animate-spin" aria-hidden="true" /> Drafting chapters…
+      </p>
+    );
+  }
+  if (q.isError || !q.data?.text) return null;
+  const data = q.data;
 
   return (
     <div className="space-y-1.5">
       <div className="flex items-center justify-between">
         <Label className="flex items-center gap-1.5 text-xs">
           <ListOrdered className="size-3.5" aria-hidden="true" />
-          Chapters &amp; description (from the transcript)
+          Chapters &amp; description
         </Label>
         <Button
           variant="outline"
           size="sm"
           className="h-6 gap-1 px-2 text-[10px]"
           onClick={() => {
-            void navigator.clipboard.writeText(text).then(() => {
+            void navigator.clipboard.writeText(data.text).then(() => {
               setCopied(true);
               setTimeout(() => setCopied(false), 2000);
             });
@@ -64,9 +54,17 @@ function ChaptersBlock({ videoId }: { videoId: string }) {
           {copied ? "Copied" : "Copy"}
         </Button>
       </div>
-      <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">{text}</pre>
+      <pre className="max-h-32 overflow-y-auto whitespace-pre-wrap rounded-md border border-border bg-muted/30 p-2 text-[11px] text-muted-foreground">{data.text}</pre>
+      {!data.valid && data.problems.length > 0 &&
+        (data.chapters.length < 3 || data.problems.some((p) => /short|30\s*s|three|3 chapters|at least/i.test(p)) ? (
+          <p className="text-[10px] text-muted-foreground">
+            Chapters need a 30s+ edit — the description is still ready to copy.
+          </p>
+        ) : (
+          <p className="text-[10px] text-warning">YouTube may ignore these chapters: {data.problems.join(" ")}</p>
+        ))}
       <p className="text-[10px] text-muted-foreground">
-        Drafted from the transcript — review before pasting into YouTube. Chapters are estimated every ~30s of speech.
+        Timed to the edited cut{data.description_source ? ` · description from ${data.description_source}` : ""}. Review before pasting into YouTube.
       </p>
     </div>
   );
@@ -84,6 +82,7 @@ export function ExportModal({ onBeforeExport }: Props) {
   const [brandKitId, setBrandKitId] = useState<string>("");
   const [preferFaces, setPreferFaces] = useState(true);
   const [ackLowConf, setAckLowConf] = useState(false);
+  const [jobId, setJobId] = useState<string | null>(null);
 
   const planQ = useQuery({
     queryKey: ["edit-plan", videoId],
@@ -133,20 +132,21 @@ export function ExportModal({ onBeforeExport }: Props) {
       });
     },
     onSuccess: (job) => {
-      setShowExport(false);
-      const jobId = job.id ?? job.render_job_id ?? job.job_id;
-      if (videoId && jobId) {
-        void navigate({
-          to: "/videos/$id/render",
-          params: { id: videoId },
-          search: { job: jobId },
-        });
-      }
+      const next = job.render_job_id ?? job.job_id ?? job.id ?? null;
+      if (next) setJobId(next);
+      else setShowExport(false);
     },
   });
 
+  const openRenderPage = () => {
+    setShowExport(false);
+    if (videoId && jobId) {
+      void navigate({ to: "/videos/$id/render", params: { id: videoId }, search: { job: jobId } });
+    }
+  };
+
   return (
-    <Dialog open={showExport} onOpenChange={(open) => { setShowExport(open); if (!open) setAckLowConf(false); }}>
+    <Dialog open={showExport} onOpenChange={(open) => { setShowExport(open); if (!open) { setAckLowConf(false); setJobId(null); } }}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>Export</DialogTitle>
@@ -156,6 +156,12 @@ export function ExportModal({ onBeforeExport }: Props) {
           </DialogDescription>
         </DialogHeader>
 
+        {jobId ? (
+          <div className="space-y-4 py-2">
+            <RenderJobStatus jobId={jobId} onRetried={(j) => setJobId(j.id)} />
+            {planId && <ChaptersBlock planId={planId} />}
+          </div>
+        ) : (
         <div className="space-y-4 py-2">
           <div className="space-y-1.5">
             <Label className="text-xs">Platform preset</Label>
@@ -204,7 +210,7 @@ export function ExportModal({ onBeforeExport }: Props) {
             Prefer face-centered reframing
           </label>
 
-          {videoId && <ChaptersBlock videoId={videoId} />}
+          {planId && <ChaptersBlock planId={planId} />}
 
           <div className="rounded-md border border-border bg-muted/20 p-2.5 text-[11px] text-muted-foreground">
             <p className="font-medium text-foreground">Pre-export checks</p>
@@ -250,7 +256,14 @@ export function ExportModal({ onBeforeExport }: Props) {
             <p className="text-xs text-red-400">{String(exportMut.error)}</p>
           )}
         </div>
+        )}
 
+        {jobId ? (
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setShowExport(false)}>Close</Button>
+            <Button onClick={openRenderPage}>Open render page</Button>
+          </DialogFooter>
+        ) : (
         <DialogFooter>
           <Button variant="ghost" onClick={() => setShowExport(false)}>Cancel</Button>
           <Button
@@ -265,6 +278,7 @@ export function ExportModal({ onBeforeExport }: Props) {
             Approve &amp; Render
           </Button>
         </DialogFooter>
+        )}
       </DialogContent>
     </Dialog>
   );

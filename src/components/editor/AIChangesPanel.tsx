@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
-import { recordRejection, styleMemoryHints } from "@/lib/editor-extras";
-
-const styleHints = styleMemoryHints();
+import { recordRejection } from "@/lib/editor-extras";
+import { isDemoMode } from "@/lib/runtime-config";
+import { usePromptPreferences } from "@/lib/use-preferences";
 import { Check, CircleAlert, Scissors, Sparkles, Star, Undo2, X } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
@@ -28,6 +28,7 @@ function isCut(seg: PlanSegment) {
 export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
   const { aiDecisions, setAiDecision, deleteClip, restoreClip, tracks, selectClip, setCurrentTime } =
     useEditorStore();
+  const { hints: styleHints, clearStyleMemory } = usePromptPreferences();
   const [filter, setFilter] = useState<Filter>("all");
   const [focusId, setFocusId] = useState<string | null>(null);
   const listRef = useRef<HTMLUListElement>(null);
@@ -109,7 +110,8 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
     if (isCut(seg)) restoreClip("vt1", clipForSegment(seg, timelineEnd() + 0.4));
     else deleteClip(clipIdForSegment(seg.id));
     setAiDecision([seg.id], "rejected", false);
-    recordRejection(seg.reason); // style memory: learn what this editor rejects
+    // Style memory: live mode learns server-side from the saved decisions.
+    if (isDemoMode()) recordRejection(seg.reason);
   };
 
   const revert = (seg: PlanSegment) => {
@@ -182,8 +184,13 @@ export function AIChangesPanel({ plan }: { plan: EditPlan | undefined }) {
         )}
         {styleHints.length > 0 && (
           <p className="rounded-md border border-primary/25 bg-primary/5 p-2 text-[10px] text-muted-foreground">
-            <span className="font-medium text-foreground">Style memory:</span> you often reject{" "}
-            {styleHints.join(", ")} — the next AI revision will avoid these. Learned on this device.
+            <span className="font-medium text-foreground">Style memory:</span>{" "}
+            {isDemoMode()
+              ? `you often reject ${styleHints.join(", ")} — the next AI revision will avoid these. Learned on this device.`
+              : `${styleHints.join(" · ")}. The AI uses this when planning.`}{" "}
+            <button type="button" onClick={clearStyleMemory} className="underline underline-offset-2 hover:text-foreground">
+              Reset
+            </button>
           </p>
         )}
         <p className="text-[10px] text-muted-foreground">

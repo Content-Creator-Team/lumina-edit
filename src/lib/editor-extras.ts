@@ -1,7 +1,7 @@
 /**
  * Local, per-browser helpers for the editor: prompt history, style memory and
- * project goals. None of these have a backend endpoint yet, so they live in
- * localStorage and are clearly scoped to this device.
+ * project goals. In live mode these live on the backend (/me/preferences,
+ * PATCH /videos/{id}); this localStorage version is the demo-mode fallback.
  */
 
 const PROMPT_HISTORY_KEY = "reelzoy.prompt_history";

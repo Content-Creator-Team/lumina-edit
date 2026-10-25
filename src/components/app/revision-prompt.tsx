@@ -8,6 +8,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { ApiError, api } from "@/lib/api-client";
 import type { EditPlan } from "@/lib/api-types";
 import { getProjectGoal, goalLabel, styleMemoryHints } from "@/lib/editor-extras";
+import { isDemoMode } from "@/lib/runtime-config";
 
 type Props = {
   videoId: string;
@@ -26,8 +27,9 @@ export function RevisionPrompt({ videoId, planId, disabled, onRevised }: Props) 
 
   const revise = useMutation({
     mutationFn: (text: string) => {
-      // Prepend the project goal and learned style preferences so the AI
-      // revises with that intent. Both are stored locally on this device.
+      // Live: the backend planner already applies the video goal and the
+      // learned style hints. Demo: prepend the locally stored equivalents.
+      if (!isDemoMode()) return api.revisePlan(videoId, planId, text);
       const goal = goalLabel(getProjectGoal(videoId));
       const hints = styleMemoryHints();
       const prefix = [

@@ -1,4 +1,4 @@
-import { AppIconBadge } from "@/components/app-icon-badge";
+import { AuthShell } from "@/components/auth/auth-shell";
 import { createFileRoute, Link, useNavigate } from "@tanstack/react-router";
 import { CheckCircle2, Loader2, XCircle } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
@@ -10,13 +10,23 @@ export const Route = createFileRoute("/verify-email")({
   validateSearch: (search: Record<string, unknown>): { token?: string } =>
     typeof search["token"] === "string" ? { token: search["token"] } : {},
   head: () => ({
-    meta: [
-      { title: "Verify email — REELZOY" },
-      { name: "robots", content: "noindex" },
-    ],
+    meta: [{ title: "Verify email — REELZOY" }, { name: "robots", content: "noindex" }],
   }),
   component: VerifyEmailPage,
 });
+
+// Module-level so remounts (StrictMode, hydration, route reloads) reuse the
+// same request: the token is single-use, so a second POST would fail with 400.
+const verifications = new Map<string, Promise<void>>();
+
+function verifyOnce(token: string) {
+  let p = verifications.get(token);
+  if (!p) {
+    p = verifyEmailToken({ data: { token } });
+    verifications.set(token, p);
+  }
+  return p;
+}
 
 function VerifyEmailPage() {
   const { token } = Route.useSearch();
@@ -33,20 +43,20 @@ function VerifyEmailPage() {
       setErrorMsg("No verification token found. Check your email link.");
       return;
     }
-    verifyEmailToken({ data: { token } })
+    verifyOnce(token)
       .then(() => setStatus("success"))
       .catch((err: unknown) => {
-        setStatus("error");
-        setErrorMsg(err instanceof Error ? err.message : "Verification failed. The link may have expired.");
+        // Success is final: never downgrade a verified state to an error.
+        setStatus((current) => (current === "success" ? current : "error"));
+        setErrorMsg(
+          err instanceof Error ? err.message : "Verification failed. The link may have expired.",
+        );
       });
   }, [token]);
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-cinema-void px-6 font-[family-name:var(--font-body)] text-cinema-ink">
-      <div className="relative w-full max-w-sm text-center">
-        <AppIconBadge />
-        <h1 className="sr-only">REELZOY</h1>
-
+    <AuthShell subtitle="Confirming your email address.">
+      <div className="auth-body text-center">
         {status === "loading" && (
           <div className="mt-8">
             <Loader2 className="mx-auto size-6 animate-spin text-cinema-muted" />
@@ -55,10 +65,12 @@ function VerifyEmailPage() {
         )}
 
         {status === "success" && (
-          <div className="mt-8">
-            <CheckCircle2 className="mx-auto size-8 text-green-500" />
+          <div className="auth-pop mt-8">
+            <CheckCircle2 className="auth-pop mx-auto size-8 text-green-500" />
             <p className="mt-3 font-medium">Email verified!</p>
-            <p className="mt-1 text-sm text-cinema-muted">Your account is active. You can now sign in.</p>
+            <p className="mt-1 text-sm text-cinema-muted">
+              Your account is active. You can now sign in.
+            </p>
             <Button
               className="mt-6 w-full bg-cinema-ember text-cinema-void hover:bg-cinema-ember/90"
               onClick={() => navigate({ to: "/login", replace: true })}
@@ -72,7 +84,9 @@ function VerifyEmailPage() {
           <div className="mt-8">
             <XCircle className="mx-auto size-8 text-cinema-ember" />
             <p className="mt-3 font-medium">Verification failed</p>
-            <p role="alert" className="mt-1 text-sm text-cinema-muted">{errorMsg}</p>
+            <p role="alert" className="mt-1 text-sm text-cinema-muted">
+              {errorMsg}
+            </p>
             <div className="mt-6 flex flex-col gap-3">
               <Button
                 className="w-full bg-cinema-ember text-cinema-void hover:bg-cinema-ember/90"
@@ -87,6 +101,6 @@ function VerifyEmailPage() {
           </div>
         )}
       </div>
-    </main>
+    </AuthShell>
   );
 }

@@ -1,5 +1,8 @@
 import { create } from "zustand";
 
+import { api } from "./api-client";
+import { isDemoMode } from "./runtime-config";
+
 // ── types ─────────────────────────────────────────────────────────────────────
 
 export type TrackType = "video" | "audio" | "text" | "image" | "effect";
@@ -79,7 +82,13 @@ interface EditorState {
 }
 
 interface EditorActions {
-  init: (videoId: string, tracks: Track[], duration: number, planId?: string | null) => void;
+  init: (
+    videoId: string,
+    tracks: Track[],
+    duration: number,
+    planId?: string | null,
+    serverDecisions?: Record<string, AiDecision> | null,
+  ) => void;
   setCurrentTime: (t: number) => void;
   setPlaying: (playing: boolean) => void;
   setZoom: (zoom: number) => void;
@@ -187,6 +196,29 @@ function applyCutRanges(tracks: Track[], ranges: Array<{ start: number; end: num
   });
 }
 
+/** Last decisions known to be saved on the server (live mode). */
+let syncedDecisions: { planId: string | null; map: Record<string, AiDecision> } = { planId: null, map: {} };
+let decisionsTimer: ReturnType<typeof setTimeout> | null = null;
+
+function flushDecisions() {
+  const { planId, aiDecisions } = useEditorStore.getState();
+  if (!planId || syncedDecisions.planId !== planId) return;
+  const prev = syncedDecisions.map;
+  const diff: Record<string, AiDecision | null> = {};
+  for (const [id, d] of Object.entries(aiDecisions)) if (prev[id] !== d) diff[id] = d;
+  for (const id of Object.keys(prev)) if (!(id in aiDecisions)) diff[id] = null;
+  if (Object.keys(diff).length === 0) return;
+  const snapshot = { ...aiDecisions };
+  api
+    .putPlanDecisions(planId, diff)
+    .then(() => {
+      if (syncedDecisions.planId === planId) syncedDecisions = { planId, map: snapshot };
+    })
+    .catch(() => {
+      /* keep local state; the next change retries the full diff */
+    });
+}
+
 const DECISIONS_KEY = (planId: string) => `reelzoy.ai_decisions.${planId}`;
 
 function loadDecisions(planId: string | null): Record<string, AiDecision> {
@@ -226,7 +258,9 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
   markOut: null,
   copilotPrompt: null,
 
-  init: (videoId, tracks, duration, planId = null) =>
+  init: (videoId, tracks, duration, planId = null, serverDecisions = null) => {
+    const decisions = isDemoMode() ? loadDecisions(planId ?? null) : { ...(serverDecisions ?? {}) };
+    syncedDecisions = { planId: planId ?? null, map: decisions };
     set({
       videoId,
       planId: planId ?? null,
@@ -237,10 +271,11 @@ export const useEditorStore = create<EditorStore>()((set, get) => ({
       past: [],
       future: [],
       dirty: false,
-      aiDecisions: loadDecisions(planId ?? null),
+      aiDecisions: decisions,
       markIn: null,
       markOut: null,
-    }),
+    });
+  },
 
   setCurrentTime: (t) => set({ currentTime: Math.max(0, Math.min(t, get().duration)) }),
   setPlaying: (playing) => set({ playing }),
@@ -439,10 +474,16 @@ export const useSelectedClip = () =>
     return null;
   });
 
-// Keep review progress across reloads (stored per plan version on this device).
+// Keep review progress across reloads: saved on the plan (debounced) in live
+// mode, per plan version on this device in demo mode.
 if (typeof window !== "undefined") {
   useEditorStore.subscribe((s, prev) => {
     if (!s.planId || s.aiDecisions === prev.aiDecisions) return;
+    if (!isDemoMode()) {
+      if (decisionsTimer) clearTimeout(decisionsTimer);
+      decisionsTimer = setTimeout(flushDecisions, 800);
+      return;
+    }
     try {
       localStorage.setItem(DECISIONS_KEY(s.planId), JSON.stringify(s.aiDecisions));
     } catch {

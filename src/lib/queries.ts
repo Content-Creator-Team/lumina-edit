@@ -3,7 +3,7 @@ import { queryOptions } from "@tanstack/react-query";
 import { api, toArray } from "./api-client";
 import type { EditPlan, Scene, Transcript, Video } from "./api-types";
 
-export const TERMINAL_STATUSES = new Set(["complete", "failed", "ready", "plan_ready"]);
+export const TERMINAL_STATUSES = new Set(["complete", "failed", "ready", "plan_ready", "cancelled"]);
 export const POLL_INTERVAL = 5_000;
 
 export const videosQuery = () =>
@@ -80,3 +80,74 @@ export function formatDate(value: string | null | undefined) {
 export function videoTitle(video: Pick<Video, "name" | "title" | "filename" | "id">) {
   return video.name ?? video.title ?? video.filename ?? `Video ${video.id.slice(0, 8)}`;
 }
+
+export const templatesQuery = () =>
+  queryOptions({
+    queryKey: ["templates"],
+    queryFn: () => api.listTemplates(),
+    staleTime: 10 * 60_000,
+  });
+
+export const musicStylesQuery = () =>
+  queryOptions({
+    queryKey: ["music-styles"],
+    queryFn: () => api.listMusicStyles(),
+    staleTime: 10 * 60_000,
+  });
+
+export const videoProgressQuery = (videoId: string) =>
+  queryOptions({
+    queryKey: ["video-progress", videoId],
+    queryFn: () => api.getVideoProgress(videoId),
+  });
+
+export const chaptersQuery = (planId: string) =>
+  queryOptions({
+    queryKey: ["chapters", planId],
+    queryFn: () => api.getChapters(planId),
+  });
+
+export const commentsQuery = (videoId: string) =>
+  queryOptions({
+    queryKey: ["comments", videoId],
+    queryFn: () => api.listComments(videoId),
+  });
+
+export const preferencesQuery = () =>
+  queryOptions({
+    queryKey: ["preferences"],
+    queryFn: () => api.getPreferences(),
+  });
+
+export const usageQuery = () =>
+  queryOptions({
+    queryKey: ["usage"],
+    queryFn: () => api.getUsage(),
+    staleTime: 60_000,
+  });
+
+export const notificationsQuery = () =>
+  queryOptions({
+    queryKey: ["notifications"],
+    queryFn: () => api.getNotifications(),
+    refetchInterval: 60_000,
+  });
+
+export const analyticsSummaryQuery = () =>
+  queryOptions({
+    queryKey: ["analytics-summary"],
+    queryFn: () => api.getAnalyticsSummary(),
+  });
+
+export const videoAnalysisQuery = (videoId: string) =>
+  queryOptions({
+    queryKey: ["video-analysis", videoId],
+    queryFn: () => api.getVideoAnalysis(videoId),
+    staleTime: 5 * 60_000,
+  });
+
+export const thumbnailsQuery = (videoId: string) =>
+  queryOptions({
+    queryKey: ["thumbnails", videoId],
+    queryFn: () => api.listThumbnails(videoId),
+  });

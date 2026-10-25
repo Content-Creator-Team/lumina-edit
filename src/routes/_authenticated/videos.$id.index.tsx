@@ -1,27 +1,32 @@
 import { useQuery } from "@tanstack/react-query";
 import { Link, createFileRoute } from "@tanstack/react-router";
-import { Check, Clapperboard, CircleDashed, Loader2, Target } from "lucide-react";
-import { useState } from "react";
+import { Clapperboard, Loader2, Target } from "lucide-react";
 
 import { ErrorState, LoadingState } from "@/components/app/query-states";
 import { StatusBadge } from "@/components/app/status-badge";
 import { Button } from "@/components/ui/button";
 import { LiveProcessingFeed } from "@/components/app/live-processing-feed";
-import { POLL_INTERVAL, formatDate, isTerminal, videoQuery, videoTitle } from "@/lib/queries";
-import { PROJECT_GOALS, getProjectGoal, setProjectGoal, type ProjectGoalId } from "@/lib/editor-extras";
+import { FootageAnalysis } from "@/components/app/footage-analysis";
+import { ProcessingStages } from "@/components/app/processing-stages";
+import { POLL_INTERVAL, formatDate, formatTimecode, isTerminal, videoQuery, videoTitle } from "@/lib/queries";
+import { PROJECT_GOALS } from "@/lib/editor-extras";
+import { isDemoMode } from "@/lib/runtime-config";
+import { useVideoGoal } from "@/lib/use-preferences";
 import { cn } from "@/lib/utils";
 
 /** "What's this for?" — the chosen goal steers revision prompts and AI suggestions. */
 function GoalPicker({ videoId }: { videoId: string }) {
-  const [goal, setGoal] = useState<ProjectGoalId | null>(() => getProjectGoal(videoId));
+  const { goal, setGoal, saving } = useVideoGoal(videoId);
   return (
     <section aria-labelledby="goal-heading" className="mt-8 rounded-xl border border-border p-4">
       <h2 id="goal-heading" className="flex items-center gap-2 text-sm font-medium text-foreground">
         <Target className="size-4 text-primary" aria-hidden="true" />
         What's this video for?
+        {saving && <Loader2 className="size-3 animate-spin text-muted-foreground" aria-hidden="true" />}
       </h2>
       <p className="mt-1 text-xs text-muted-foreground">
-        The AI uses this intent when you ask for revisions. Saved on this device.
+        The AI uses this intent when you ask for revisions.
+        {isDemoMode() ? " Saved on this device." : ""}
       </p>
       <div className="mt-3 flex flex-wrap gap-2" role="radiogroup" aria-label="Video goal">
         {PROJECT_GOALS.map((g) => (
@@ -31,9 +36,7 @@ function GoalPicker({ videoId }: { videoId: string }) {
             aria-checked={goal === g.id}
             title={g.hint}
             onClick={() => {
-              const next = goal === g.id ? null : g.id;
-              setGoal(next);
-              setProjectGoal(videoId, next);
+              setGoal(goal === g.id ? null : g.id);
             }}
             className={cn(
               "rounded-full border px-3 py-1.5 text-xs transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none",
@@ -67,28 +70,6 @@ export const Route = createFileRoute("/_authenticated/videos/$id/")({
   }),
   component: VideoDetailPage,
 });
-
-const PIPELINE = [
-  { key: "scene_detection", label: "Scene detection", blurb: "Splitting the footage into shots." },
-  { key: "transcription", label: "Transcription", blurb: "Turning speech into a timed transcript." },
-  { key: "timeline_extraction", label: "Timeline extraction", blurb: "Mapping cuts and events." },
-  { key: "vision_tagging", label: "Vision tagging", blurb: "Labelling what appears on screen." },
-  { key: "plan_generation", label: "Plan generation", blurb: "Drafting the edit plan." },
-] as const;
-
-const ORDERED_STATUSES = ["uploading", "processing", "ready", "plan_ready", "approved", "rendering", "complete"];
-
-function stageState(stageIndex: number, video: { status: string; stages?: Record<string, string> | null }, key: string) {
-  const explicit = video.stages?.[key];
-  if (explicit) return explicit.toLowerCase();
-
-  const status = String(video.status).toLowerCase();
-  if (status === "failed") return "unknown";
-  const statusIndex = ORDERED_STATUSES.indexOf(status);
-  if (statusIndex >= ORDERED_STATUSES.indexOf("ready")) return "complete";
-  if (status === "processing") return stageIndex === 0 ? "running" : "pending";
-  return "pending";
-}
 
 function VideoDetailPage() {
   const { id } = Route.useParams();
@@ -125,50 +106,38 @@ function VideoDetailPage() {
 
       <GoalPicker videoId={id} />
 
+      {!!video.edit_options?.combined_parts?.length && (
+        <section aria-label="Combined clips" className="mt-6 rounded-xl border border-border p-4">
+          <p className="text-sm font-medium text-foreground">
+            Combined from {video.edit_options.combined_parts.length} clips
+          </p>
+          <ol className="mt-2 flex gap-2 overflow-x-auto pb-1">
+            {video.edit_options.combined_parts.map((p) => (
+              <li key={p.index} className="shrink-0 rounded-md bg-muted/50 px-2.5 py-1.5 text-xs">
+                <span className="font-medium text-foreground">{p.index + 1}. {p.name}</span>
+                <span className="ml-1.5 font-mono text-muted-foreground">
+                  {formatTimecode(p.start)}–{formatTimecode(p.end)}
+                </span>
+              </li>
+            ))}
+          </ol>
+        </section>
+      )}
+      {!video.edit_options?.combined_parts?.length && !!video.edit_options?.combined_from?.length && (
+        <p className="mt-6 text-xs text-muted-foreground">
+          Combining {video.edit_options.combined_from.length} clips: {video.edit_options.combined_from.join(", ")}
+        </p>
+      )}
+
       {status === "failed" && (
         <p role="alert" className="mt-6 rounded-md border border-destructive/40 p-4 text-sm">
           {video.error ?? "Processing failed. Try uploading the file again."}
         </p>
       )}
 
-      <ol className="mt-8 space-y-3">
-        {PIPELINE.map((stage, index) => {
-          const state = stageState(index, { status, stages: video.stages ?? null }, stage.key);
-          return (
-            <li
-              key={stage.key}
-              className="surface-card flex items-start gap-3 rounded-xl p-4"
-            >
-              <span className="mt-0.5" aria-hidden="true">
-                {state === "complete" ? (
-                  <Check className="size-4 text-primary" />
-                ) : state === "running" ? (
-                  <Loader2 className="size-4 animate-spin text-foreground" />
-                ) : (
-                  <CircleDashed className="size-4 text-muted-foreground" />
-                )}
-              </span>
-              <div>
-                <p className="text-sm font-medium text-foreground">
-                  {stage.label}
-                  <span className="ml-2 text-xs font-normal text-muted-foreground">
-                    {state === "complete"
-                      ? "Done"
-                      : state === "running"
-                        ? "In progress"
-                        : state === "failed"
-                          ? "Failed"
-                          : state === "unknown"
-                            ? "Status unavailable"
-                            : "Waiting"}
-                  </span>
-                </p>
-                <p className="mt-1 text-sm text-muted-foreground">{stage.blurb}</p>
-              </div>
-            </li>
-          );
-        })}
-      </ol>
+      <ProcessingStages videoId={id} live={!isTerminal(video.status)} />
+
+      <FootageAnalysis videoId={id} enabled={planReady} />
 
       <LiveProcessingFeed videoId={id} live={!isTerminal(video.status)} />
 

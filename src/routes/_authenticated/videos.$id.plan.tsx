@@ -2,6 +2,7 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, Check, Clapperboard, Pencil, RefreshCw, Scissors, Loader2 } from "lucide-react";
 
+import { ChangeTemplateButton, CreativePlanPanel } from "@/components/app/creative-plan-panel";
 import { ErrorState, LoadingState } from "@/components/app/query-states";
 import { StatusBadge } from "@/components/app/status-badge";
 import { Reveal } from "@/components/landing/reveal";
@@ -32,6 +33,16 @@ function PlanPage() {
   const qc = useQueryClient();
   const video = useQuery(videoQuery(id));
   const plan = useQuery(editPlanQuery(id));
+  const renderJobs = useQuery({
+    queryKey: ["render-jobs", id],
+    queryFn: () => api.listRenderJobs(id),
+    enabled: Boolean(plan.data?.creative),
+  });
+  const lastReport =
+    [...(renderJobs.data ?? [])]
+      .filter((j) => String(j.status).toLowerCase() === "complete" && j.report)
+      .sort((a, b) => String(b.completed_at ?? b.created_at ?? "").localeCompare(String(a.completed_at ?? a.created_at ?? "")))[0]
+      ?.report ?? null;
 
   const approve = useMutation({
     mutationFn: () => api.approvePlan(plan.data!.id),
@@ -96,6 +107,8 @@ function PlanPage() {
         </div>
       </Reveal>
 
+      {p.creative && <CreativePlanPanel creative={p.creative} renderReport={lastReport} />}
+
       <Reveal delay={140}>
         <div className="surface-card mt-6 rounded-2xl p-5">
           <p className="text-sm font-semibold">Timeline overview</p>
@@ -145,6 +158,7 @@ function PlanPage() {
         <Button asChild variant="outline">
           <Link to="/videos/$id/review" params={{ id }}><RefreshCw className="mr-1.5 size-4" /> Regenerate plan</Link>
         </Button>
+        <ChangeTemplateButton videoId={id} currentTemplateId={p.template_id ?? video.data?.template_id ?? null} />
         <Button asChild variant="ghost">
           <Link to="/videos/$id/versions" params={{ id }}>All versions</Link>
         </Button>

@@ -1,6 +1,7 @@
 import type { BrandKit } from "@/lib/api-types";
 import type { EditPlan, PlanPatch, RenderJob, Video } from "../api-types";
 import { DEMO_USER, demoSeeds, type DemoVideoSeed } from "./fixtures";
+import { demoCreative, demoCreativeRoute, isUnhandled } from "./demo-creative";
 
 /**
  * In-memory backend for the demo workspace. It implements exactly the routes
@@ -140,6 +141,9 @@ function generatePlan(seed: DemoVideoSeed): EditPlan {
     })),
     source: "Automatic generation",
     parent_plan_id: null,
+    template_id: seed.video.template_id ?? "auto",
+    creative: demoCreative(seed, seed.video.template_id),
+    ai_decisions: {},
   };
 }
 
@@ -152,11 +156,24 @@ function currentPlan(seed: DemoVideoSeed): EditPlan {
 
 function advanceRenders(seed: DemoVideoSeed) {
   for (const job of seed.renderJobs) {
-    if (job.status === "complete" || job.status === "failed") continue;
+    if (job.status === "complete" || job.status === "failed" || job.status === "cancelled") continue;
     const started = new Date(job.created_at ?? new Date().toISOString()).getTime();
     const ratio = Math.min(1, (Date.now() - started) / 30_000);
     job.progress = Math.round(ratio * 100);
     job.status = ratio >= 1 ? "complete" : ratio > 0.08 ? "processing" : "queued";
+    job.stage = ratio >= 1 ? "done" : ratio > 0.7 ? "encoding" : ratio > 0.08 ? "compositing" : "queued";
+    if (job.status === "complete" && !job.report) {
+      job.report = {
+        render: { duration: 42, clips: 9, transitions: 6, beat_aligned_cuts: 5, warnings: [] },
+        music: {
+          title: "Bright Horizons",
+          license_name: "CC BY 4.0",
+          attribution: '"Bright Horizons" by Demo Library, CC BY 4.0',
+          status: "selected",
+        },
+        credits: ['Music: "Bright Horizons" by Demo Library (CC BY 4.0)'],
+      };
+    }
     if (job.status === "complete") {
       job.completed_at = new Date().toISOString();
       seed.video.status = "complete";
@@ -183,7 +200,21 @@ export async function demoRequest<T>({ path, method, body, formData }: DemoReque
 
   const url = path.split("?")[0] ?? path;
   const parts = url.replace(/^\/api\/v1\//, "").split("/");
-  const send = (value: unknown) => clone(value) as T;
+  const send = (value: unknown) => (value === undefined ? (undefined as T) : (clone(value) as T));
+
+  const creative = demoCreativeRoute({
+    parts,
+    query: path.split("?")[1] ?? "",
+    formData,
+    method,
+    body,
+    seeds: state.seeds,
+    findSeed: seedFor,
+    findPlan: seedForPlan,
+    currentPlan,
+    nextPlanId: () => `plan-${state.planCounter++}`,
+  });
+  if (!isUnhandled(creative)) return send(creative);
 
   // /videos...
   if (parts[0] === "videos") {
@@ -198,12 +229,22 @@ export async function demoRequest<T>({ path, method, body, formData }: DemoReque
     }
 
     if (parts[1] === "upload" && method === "POST") {
-      const input = (body ?? {}) as { filename?: string; size?: number };
+      const input = (body ?? {}) as {
+        filename?: string;
+        size?: number;
+        title?: string;
+        goal?: string;
+        template_id?: string;
+        options?: Video["edit_options"];
+      };
       const id = `vid-${Math.random().toString(36).slice(2, 8)}`;
       const video: Video = {
         id,
         filename: input.filename ?? "untitled.mp4",
-        name: (input.filename ?? "Untitled clip").replace(/\.[^.]+$/, ""),
+        name: input.title || (input.filename ?? "Untitled clip").replace(/\.[^.]+$/, ""),
+        goal: input.goal ?? null,
+        template_id: input.template_id ?? "auto",
+        edit_options: input.options ?? null,
         status: "processing",
         created_at: new Date().toISOString(),
         duration: 168,

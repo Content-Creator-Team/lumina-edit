@@ -13,7 +13,12 @@ function fmtTC(s: number) {
   return `${h.toString().padStart(2,"0")}:${m.toString().padStart(2,"0")}:${sec.toString().padStart(2,"0")}:${f.toString().padStart(2,"0")}`;
 }
 
-/** Canvas-based preview player. Renders text/caption clips; video clips show placeholder. */
+/**
+ * Preview player. With a playback URL the real footage plays in a <video>
+ * synced to the timeline (clip under the playhead → its source time); the
+ * canvas on top draws text/captions and effect overlays. Without one, video
+ * clips fall back to placeholders.
+ */
 export function PreviewCanvas({ className, playbackUrl }: { className?: string; playbackUrl?: string | null }) {
   const kit = useDefaultBrandKit();
   const playingNow = useEditorStore((st) => st.playing);
@@ -42,6 +47,21 @@ export function PreviewCanvas({ className, playbackUrl }: { className?: string; 
     if (playingNow) void v.play().catch(() => undefined);
     else v.pause();
   }, [compare, playingNow]);
+  // Edited preview: real footage for the clip under the playhead.
+  const editRef = useRef<HTMLVideoElement>(null);
+  const hasFootage = Boolean(playbackUrl);
+  const inGap = sourceTime === null;
+  useEffect(() => {
+    const v = editRef.current;
+    if (!v || sourceTime === null) return;
+    if (Math.abs(v.currentTime - sourceTime) > 0.3) v.currentTime = sourceTime;
+  }, [sourceTime]);
+  useEffect(() => {
+    const v = editRef.current;
+    if (!v) return;
+    if (playingNow && !inGap && !compare) void v.play().catch(() => undefined);
+    else v.pause();
+  }, [playingNow, inGap, compare]);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const rafRef = useRef<number | null>(null);
   const lastRef = useRef<number | null>(null);
@@ -70,8 +90,10 @@ export function PreviewCanvas({ className, playbackUrl }: { className?: string; 
     if (!ctx) return;
     const W = canvas.width, H = canvas.height;
     ctx.clearRect(0, 0, W, H);
-    ctx.fillStyle = "#0d0d0d";
-    ctx.fillRect(0, 0, W, H);
+    if (!hasFootage) {
+      ctx.fillStyle = "#0d0d0d";
+      ctx.fillRect(0, 0, W, H);
+    }
 
     for (const track of tracks) {
       if (!track.visible || track.muted) continue;
@@ -101,6 +123,24 @@ export function PreviewCanvas({ className, playbackUrl }: { className?: string; 
             const w = ctx.measureText(clip.text).width;
             ctx.fillStyle = kit.accent_color ?? "#38bdf8";
             ctx.fillRect(W / 2 - w / 2, H - 34, w, 5);
+          }
+          ctx.restore();
+        } else if ((clip.type === "video" || clip.type === "image") && hasFootage) {
+          // Real footage is underneath; only draw tonal and fade overlays.
+          ctx.save();
+          const b = clip.brightness ?? 1;
+          if (b !== 1) {
+            ctx.fillStyle = b > 1 ? `rgba(255,255,255,${(b - 1) * 0.4})` : `rgba(0,0,0,${(1 - b) * 0.5})`;
+            ctx.fillRect(0, 0, W, H);
+          }
+          let fade = 0;
+          if ((clip.fadeIn ?? 0) > 0 && currentTime - clip.startTime < (clip.fadeIn ?? 0))
+            fade = 1 - (currentTime - clip.startTime) / (clip.fadeIn ?? 1);
+          if ((clip.fadeOut ?? 0) > 0 && end - currentTime < (clip.fadeOut ?? 0))
+            fade = Math.max(fade, 1 - (end - currentTime) / (clip.fadeOut ?? 1));
+          if (fade > 0) {
+            ctx.fillStyle = `rgba(0,0,0,${fade})`;
+            ctx.fillRect(0, 0, W, H);
           }
           ctx.restore();
         } else if (clip.type === "video" || clip.type === "image") {
@@ -162,14 +202,24 @@ export function PreviewCanvas({ className, playbackUrl }: { className?: string; 
     ctx.textAlign = "left";
     ctx.fillText(fmtTC(currentTime), 8, H - 6);
     ctx.restore();
-  }, [tracks, currentTime, kit]);
+  }, [tracks, currentTime, kit, hasFootage]);
 
   const seek = useCallback((d: number) => setCurrentTime(currentTime + d), [currentTime, setCurrentTime]);
 
   return (
     <div className={cn("flex flex-col items-stretch gap-2 bg-black", className)}>
       <div className="relative flex-1 overflow-hidden bg-black">
-        <canvas ref={canvasRef} width={1280} height={720} className="h-full w-full object-contain" />
+        {playbackUrl && (
+          <video
+            ref={editRef}
+            src={playbackUrl}
+            className={cn("absolute inset-0 h-full w-full object-contain", inGap && "invisible")}
+            playsInline
+            preload="auto"
+            aria-label="Edited preview"
+          />
+        )}
+        <canvas ref={canvasRef} width={1280} height={720} className="relative h-full w-full object-contain" />
         {compare && (
           <div className="absolute inset-0 flex items-center justify-center bg-black">
             {playbackUrl ? (

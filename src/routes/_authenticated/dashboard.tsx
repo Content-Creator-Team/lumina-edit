@@ -1,10 +1,24 @@
-import { useQuery } from "@tanstack/react-query";
-import { Link, createFileRoute } from "@tanstack/react-router";
-import { Clapperboard, Scissors, UploadCloud } from "lucide-react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { Link, createFileRoute, useNavigate } from "@tanstack/react-router";
+import { Clapperboard, Combine, Loader2, Scissors, UploadCloud, X } from "lucide-react";
+import { useState } from "react";
 
 import { EmptyState, ErrorState, LoadingState } from "@/components/app/query-states";
 import { StatusBadge } from "@/components/app/status-badge";
+import { TemplateLibrary } from "@/components/app/template-library";
 import { Button } from "@/components/ui/button";
+import { Checkbox } from "@/components/ui/checkbox";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { ApiError, api } from "@/lib/api-client";
 import { POLL_INTERVAL, formatDate, isTerminal, videoTitle, videosQuery } from "@/lib/queries";
 
 export const Route = createFileRoute("/_authenticated/dashboard")({
@@ -25,7 +39,33 @@ export const Route = createFileRoute("/_authenticated/dashboard")({
   component: DashboardPage,
 });
 
+const READY = ["ready", "plan_ready", "approved", "rendering", "complete"];
+
 function DashboardPage() {
+  const navigate = useNavigate();
+  const qc = useQueryClient();
+  const [combining, setCombining] = useState(false);
+  const [selected, setSelected] = useState<string[]>([]);
+  const [dialogOpen, setDialogOpen] = useState(false);
+  const [title, setTitle] = useState("");
+  const [templateId, setTemplateId] = useState("auto");
+  const combine = useMutation({
+    mutationFn: () =>
+      api.combineVideos({
+        video_ids: selected,
+        template_id: templateId,
+        ...(title.trim() ? { title: title.trim() } : {}),
+      }),
+    onSuccess: (r) => {
+      void qc.invalidateQueries({ queryKey: ["videos"] });
+      setDialogOpen(false);
+      setCombining(false);
+      setSelected([]);
+      void navigate({ to: "/videos/$id", params: { id: r.video_id } });
+    },
+  });
+  const toggle = (id: string) =>
+    setSelected((s) => (s.includes(id) ? s.filter((x) => x !== id) : s.length >= 20 ? s : [...s, id]));
   const query = useQuery({
     ...videosQuery(),
     refetchInterval: (q) => {
@@ -46,6 +86,16 @@ function DashboardPage() {
           </p>
         </div>
         <div className="flex flex-wrap gap-2">
+          <Button
+            variant={combining ? "secondary" : "outline"}
+            onClick={() => {
+              setCombining((c) => !c);
+              setSelected([]);
+            }}
+          >
+            {combining ? <X className="size-4" aria-hidden="true" /> : <Combine className="size-4" aria-hidden="true" />}
+            {combining ? "Cancel combine" : "Combine"}
+          </Button>
           <Button asChild variant="outline">
             <Link to="/trimmer">
               <Scissors className="size-4" aria-hidden="true" />
@@ -60,6 +110,27 @@ function DashboardPage() {
           </Button>
         </div>
       </div>
+
+      {combining && (
+        <div className="glass-panel sticky top-16 z-20 mt-6 flex flex-wrap items-center gap-3 rounded-xl p-3 text-sm">
+          <span className="text-muted-foreground">
+            {selected.length === 0
+              ? "Select 2–20 ready videos in the order you want them joined."
+              : `${selected.length} selected — joined in the order you picked them.`}
+          </span>
+          <Button
+            size="sm"
+            className="ml-auto"
+            disabled={selected.length < 2}
+            onClick={() => {
+              combine.reset();
+              setDialogOpen(true);
+            }}
+          >
+            Combine {selected.length >= 2 ? selected.length : ""} clips
+          </Button>
+        </div>
+      )}
 
       <div className="mt-8">
         {query.isPending ? (
@@ -79,8 +150,24 @@ function DashboardPage() {
           />
         ) : (
           <ul className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-            {query.data.map((video) => (
-              <li key={video.id}>
+            {query.data.map((video) => {
+              const order = selected.indexOf(video.id);
+              const selectable = READY.includes(String(video.status).toLowerCase());
+              return (
+              <li key={video.id} className="relative">
+                {combining && (
+                  <label
+                    className={`absolute top-2 left-2 z-10 flex items-center gap-1.5 rounded-md bg-background/90 px-2 py-1 text-xs shadow ${selectable ? "cursor-pointer" : "opacity-50"}`}
+                  >
+                    <Checkbox
+                      checked={order >= 0}
+                      disabled={!selectable}
+                      onCheckedChange={() => toggle(video.id)}
+                      aria-label={`Select ${videoTitle(video)} to combine`}
+                    />
+                    {order >= 0 ? `#${order + 1}` : selectable ? "Select" : "Not ready"}
+                  </label>
+                )}
                 <Link
                   to="/videos/$id"
                   params={{ id: video.id }}
@@ -142,10 +229,42 @@ function DashboardPage() {
                   </div>
                 </Link>
               </li>
-            ))}
+              );
+            })}
           </ul>
         )}
       </div>
+
+      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          <DialogHeader>
+            <DialogTitle>Combine {selected.length} clips</DialogTitle>
+            <DialogDescription>
+              {selected
+                .map((id) => query.data?.find((v) => v.id === id))
+                .map((v, i) => `${i + 1}. ${v ? videoTitle(v) : "?"}`)
+                .join("  ·  ")}
+            </DialogDescription>
+          </DialogHeader>
+          <div>
+            <Label htmlFor="combine-title" className="text-xs">Title (optional)</Label>
+            <Input id="combine-title" className="mt-1" value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
+          </div>
+          <TemplateLibrary value={templateId} onChange={(id) => setTemplateId(id)} gridClassName="max-h-[40vh]" />
+          {combine.isError && (
+            <p role="alert" className="text-xs text-destructive">
+              {combine.error instanceof ApiError ? combine.error.detail : String(combine.error)}
+            </p>
+          )}
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setDialogOpen(false)}>Cancel</Button>
+            <Button disabled={combine.isPending || selected.length < 2} onClick={() => combine.mutate()}>
+              {combine.isPending && <Loader2 className="mr-1.5 size-4 animate-spin" />}
+              Combine into one edit
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

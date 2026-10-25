@@ -6,7 +6,7 @@ RUN npm ci
 COPY . .
 # VITE_* values are baked into the client bundle at build time
 ARG VITE_API_URL=https://api.reelzoy.com
-ARG VITE_DEMO_MODE=false
+ARG VITE_DEMO_MODE=true
 ENV VITE_API_URL=$VITE_API_URL \
     VITE_DEMO_MODE=$VITE_DEMO_MODE \
     NITRO_PRESET=node-server

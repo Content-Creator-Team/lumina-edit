@@ -11,12 +11,10 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 import { useEditorStore } from "@/lib/editor-store";
-import { api } from "@/lib/api-client";
+import { ApiError, api } from "@/lib/api-client";
 import { agentOpsToTimelineRanges } from "@/lib/timeline-persist";
 import { formatTimecode, transcriptQuery } from "@/lib/queries";
-import {
-  getPromptHistory, getSavedPrompts, recordPrompt, toggleSavedPrompt,
-} from "@/lib/editor-extras";
+import { usePromptPreferences } from "@/lib/use-preferences";
 import { SilenceRemovalPanel } from "./SilenceRemovalPanel";
 
 function EngagementPanel({ videoId }: { videoId: string }) {
@@ -132,16 +130,18 @@ function SmartClipsPanel({ videoId }: { videoId: string }) {
 function CommandPanel({ videoId }: { videoId: string }) {
   const [instr, setInstr] = useState("");
   const [summary, setSummary] = useState<string | null>(null);
-  const [saved, setSaved] = useState<string[]>(() => getSavedPrompts());
-  const [history, setHistory] = useState<string[]>(() => getPromptHistory());
+  const { saved, history, recordPrompt, toggleSaved } = usePromptPreferences();
 
   const mutation = useMutation({
-    mutationFn: (instruction: string) => api.agentEdit(videoId, instruction),
+    mutationFn: async (instruction: string) => {
+      const text = instruction.trim();
+      if (text.length < 5) throw new Error("Describe the edit in a few more words (at least 5 characters).");
+      return api.agentEdit(videoId, text);
+    },
     onSuccess: (data, instruction) => {
       setInstr("");
       setSummary(data.edit_plan.summary);
       recordPrompt(instruction);
-      setHistory(getPromptHistory());
       const currentTracks = useEditorStore.getState().tracks;
       const ranges = agentOpsToTimelineRanges(data.edit_plan.operations, currentTracks);
       if (ranges.length > 0) useEditorStore.getState().cutRanges(ranges);
@@ -186,12 +186,22 @@ function CommandPanel({ videoId }: { videoId: string }) {
           aria-pressed={isSaved}
           aria-label={isSaved ? "Remove from saved prompts" : "Save this prompt for reuse"}
           title={isSaved ? "Remove from saved prompts" : "Save this prompt for reuse"}
-          onClick={() => setSaved(toggleSavedPrompt(instr))}
+          onClick={() => toggleSaved(instr)}
         >
           {isSaved ? <BookmarkCheck className="size-3.5 text-primary" /> : <Bookmark className="size-3.5" />}
         </Button>
       </div>
-      {mutation.isError && <p className="text-xs text-red-400">{String(mutation.error)}</p>}
+      {mutation.isError && (
+        <p className="text-xs text-red-400">
+          {mutation.error instanceof ApiError
+            ? mutation.error.status === 422
+              ? "The AI couldn't read that instruction. Use 5–2000 characters, e.g. “Remove silences longer than 2s”."
+              : mutation.error.detail
+            : mutation.error instanceof Error
+              ? mutation.error.message
+              : String(mutation.error)}
+        </p>
+      )}
       {mutation.isSuccess && (
         <p className="text-xs text-green-400">
           Applied {mutation.data.edit_plan.operations.length} cut(s) to the timeline.

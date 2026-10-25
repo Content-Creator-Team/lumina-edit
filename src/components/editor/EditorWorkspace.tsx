@@ -188,6 +188,7 @@ export function EditorWorkspace({ videoId }: { videoId: string }) {
       planToEditorTracks(planQ.data),
       videoQ.data.duration ?? 0,
       planQ.data.id,
+      planQ.data.ai_decisions ?? null,
     );
   }, [planQ.data?.id, videoQ.data?.id, videoId, init]);
 
